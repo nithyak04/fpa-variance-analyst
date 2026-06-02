@@ -33,7 +33,7 @@
 // ============================================================
 // CONFIG — edit these two lines, then save and refresh
 // ============================================================
-const OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE";
+// API key stored securely in Vercel — calls go through /api/analyze
 const AUTHOR_HANDLE = "@yourhandle";
 // ============================================================
 
@@ -280,11 +280,10 @@ function AnalysisPanel({ data, onAnalysisDone, analysisResult, setAnalysisResult
     setStatus("loading"); setErrorMsg(""); setAnalysisResult(null);
     const enriched = enrichData(data);
     try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const res = await fetch("/api/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
           model: "gpt-4o",
