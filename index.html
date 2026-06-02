@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cortex FP&A — Variance Intelligence</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #0d1117; }
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(41,181,232,0.4); }
+      50% { box-shadow: 0 0 0 4px rgba(41,181,232,0.15); }
+    }
+    .flagged-row { animation: pulse-border 2s ease-in-out infinite; }
+    .sticky-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #161b22; }
+    ::-webkit-scrollbar-thumb { background: #29B5E8; border-radius: 3px; }
+    .table-container { overflow-x: auto; }
+    th { cursor: pointer; user-select: none; }
+    th:hover { background: #1c2a3a !important; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ============================================================
+// CONFIG — edit these two lines, then save and refresh
+// ============================================================
+const OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE";
+const AUTHOR_HANDLE = "@yourhandle";
+// ============================================================
+
+const SNOWFLAKE_BLUE = "#29B5E8";
+
+const DEMO_DATA = [
+  { department: "Sales",           month: "Jan", budget: 500000, actual: 423000 },
+  { department: "Sales",           month: "Feb", budget: 520000, actual: 498000 },
+  { department: "Sales",           month: "Mar", budget: 540000, actual: 461000 },
+  { department: "Marketing",       month: "Jan", budget: 180000, actual: 214000 },
+  { department: "Marketing",       month: "Feb", budget: 185000, actual: 227000 },
+  { department: "Marketing",       month: "Mar", budget: 190000, actual: 198000 },
+  { department: "Engineering",     month: "Jan", budget: 320000, actual: 318000 },
+  { department: "Engineering",     month: "Feb", budget: 325000, actual: 331000 },
+  { department: "Engineering",     month: "Mar", budget: 330000, actual: 342000 },
+  { department: "G&A",             month: "Jan", budget: 95000,  actual: 92000  },
+  { department: "G&A",             month: "Feb", budget: 95000,  actual: 108000 },
+  { department: "G&A",             month: "Mar", budget: 95000,  actual: 97000  },
+  { department: "Customer Success",month: "Jan", budget: 140000, actual: 137000 },
+  { department: "Customer Success",month: "Feb", budget: 145000, actual: 144000 },
+  { department: "Customer Success",month: "Mar", budget: 150000, actual: 163000 },
+  { department: "Product",         month: "Jan", budget: 210000, actual: 208000 },
+  { department: "Product",         month: "Feb", budget: 215000, actual: 219000 },
+  { department: "Product",         month: "Mar", budget: 220000, actual: 247000 },
+];
+
+const REVENUE_DEPTS = new Set(["Sales"]);
+const MONTH_ORDER = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+
+function calcVariance(row) {
+  const dollar = row.actual - row.budget;
+  const pct = (dollar / row.budget) * 100;
+  const isRevenue = REVENUE_DEPTS.has(row.department);
+  const badness = isRevenue ? -pct : pct;
+  return { dollar, pct, badness };
+}
+
+function enrichData(rows) {
+  return rows.map(r => { const v = calcVariance(r); return { ...r, ...v }; });
+}
+
+function getTrendFlags(enriched) {
+  const byDept = {};
+  enriched.forEach(r => { if (!byDept[r.department]) byDept[r.department] = []; byDept[r.department].push(r); });
+  const flagged = new Set();
+  Object.values(byDept).forEach(rows => {
+    const sorted = [...rows].sort((a,b) => (MONTH_ORDER[a.month]||99)-(MONTH_ORDER[b.month]||99));
+    let streak = 0;
+    sorted.forEach((r, i) => {
+      if (r.badness > 5) {
+        streak++;
+        if (streak >= 2) { flagged.add(`${r.department}|${r.month}`); flagged.add(`${sorted[i-1].department}|${sorted[i-1].month}`); }
+      } else { streak = 0; }
+    });
+  });
+  return flagged;
+}
+
+function varianceCellClass(badness) {
+  if (badness > 5) return "bg-red-900/60 text-red-300 font-semibold";
+  if (badness > 2) return "bg-yellow-900/50 text-yellow-300 font-semibold";
+  return "bg-green-900/40 text-green-300";
+}
+
+function fmt$(n) {
+  const abs = Math.abs(n), sign = n < 0 ? "-" : "+";
+  if (abs >= 1000000) return sign+"$"+(abs/1000000).toFixed(2)+"M";
+  if (abs >= 1000) return sign+"$"+(abs/1000).toFixed(1)+"K";
+  return sign+"$"+abs.toLocaleString();
+}
+function fmtPct(n) { return (n>=0?"+":"")+n.toFixed(1)+"%"; }
+function fmtBig(n) { return "$"+Math.abs(n).toLocaleString(); }
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/).filter(l=>l.trim());
+  const rows = [];
+  let start = 0;
+  const first = lines[0].split(",").map(c=>c.trim().toLowerCase());
+  if (first.includes("department")||first.includes("month")) start = 1;
+  for (let i = start; i < lines.length; i++) {
+    const cols = lines[i].split(",").map(c=>c.trim().replace(/^"|"$/g,""));
+    if (cols.length < 4) continue;
+    const [department, month, budget, actual] = cols;
+    const b = parseFloat(budget.replace(/[$,]/g,"")), a = parseFloat(actual.replace(/[$,]/g,""));
+    if (!isNaN(b) && !isNaN(a)) rows.push({ department, month, budget: b, actual: a });
+  }
+  return rows;
+}
+
+function buildPrompt(enriched) {
+  const header = "Department         | Month | Budget      | Actual      | $ Variance  | % Variance";
+  const div = "-".repeat(80);
+  const lines = enriched.map(r =>
+    `${r.department.padEnd(18)} | ${r.month} | ${fmtBig(r.budget).padStart(10)} | ${fmtBig(r.actual).padStart(10)} | ${fmt$(r.dollar).padStart(10)} | ${fmtPct(r.pct).padStart(8)}`
+  );
+  return `${header}\n${div}\n${lines.join("\n")}`;
+}
+
+const SYSTEM_PROMPT = `You are a senior FP&A analyst at a SaaS company using Snowflake Cortex to analyze budget vs actual variances. You are direct, concise, and write like a CFO expects — no fluff, no bullet-point padding. Analyze the variance data provided and return a JSON object with exactly these fields:
+{
+  "anomalies": [array of strings, each one a specific anomaly worth flagging, max 4],
+  "root_causes": [array of objects: {department, month, hypothesis} for the top 3-4 worst variances],
+  "risk_flags": [array of strings, cross-department risks or patterns, max 3],
+  "cfo_narrative": "Two to three sentence paragraph written for a CFO or board. Past tense. Specific numbers. No hedge words like may or could."
+}
+Return only valid JSON. No markdown, no explanation outside the JSON.`;
+
+// ── Components ──────────────────────────────────────────────
+
+function Header() {
+  return (
+    <header className="w-full px-8 py-4 flex items-center justify-between border-b border-slate-700/60" style={{background:"#0d1520"}}>
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">❄️</span>
+        <div>
+          <div className="text-xl font-bold tracking-tight text-white">Cortex FP&amp;A</div>
+          <div className="text-xs font-medium" style={{color:SNOWFLAKE_BLUE}}>Variance Intelligence — Powered by Snowflake Cortex</div>
+        </div>
+      </div>
+      <div className="text-xs text-slate-500 hidden sm:block">FY Budget vs. Actual Analysis</div>
+    </header>
+  );
+}
+
+function DataInput({ usingDemo, onUseDemo, onCSVUpload }) {
+  const fileRef = React.useRef();
+  function handleFile(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const rows = parseCSV(ev.target.result);
+      if (rows.length === 0) { alert("Could not parse CSV. Ensure columns: Department, Month, Budget, Actual"); return; }
+      onCSVUpload(rows);
+    };
+    reader.readAsText(file); e.target.value = "";
+  }
+  return (
+    <div className="flex items-center gap-3">
+      <button onClick={onUseDemo} className="px-4 py-2 rounded text-sm font-medium transition-all"
+        style={usingDemo ? {background:SNOWFLAKE_BLUE,color:"#0d1117"} : {background:"#1c2a3a",color:"#94a3b8",border:"1px solid #334155"}}>
+        📊 Use Demo Data
+      </button>
+      <button onClick={()=>fileRef.current.click()} className="px-4 py-2 rounded text-sm font-medium transition-all"
+        style={!usingDemo ? {background:SNOWFLAKE_BLUE,color:"#0d1117"} : {background:"#1c2a3a",color:"#94a3b8",border:"1px solid #334155"}}>
+        📁 Upload CSV
+      </button>
+      <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile}/>
+      <span className="text-xs text-slate-500">CSV: Department, Month, Budget, Actual</span>
+    </div>
+  );
+}
+
+function SortIcon({col,sortCol,sortDir}) {
+  if (sortCol !== col) return <span className="ml-1 text-slate-600">⇅</span>;
+  return <span className="ml-1" style={{color:SNOWFLAKE_BLUE}}>{sortDir==="asc"?"↑":"↓"}</span>;
+}
+
+function VarianceTable({ data, analysisRows }) {
+  const [sortCol, setSortCol] = React.useState("badness");
+  const [sortDir, setSortDir] = React.useState("desc");
+  const enriched = React.useMemo(()=>enrichData(data),[data]);
+  const trendFlags = React.useMemo(()=>getTrendFlags(enriched),[enriched]);
+
+  function handleSort(col) {
+    if (sortCol===col) setSortDir(d=>d==="asc"?"desc":"asc");
+    else { setSortCol(col); setSortDir("desc"); }
+  }
+
+  const sorted = React.useMemo(()=>[...enriched].sort((a,b)=>{
+    let av=a[sortCol],bv=b[sortCol];
+    if (typeof av==="string") { av=av.toLowerCase(); bv=bv.toLowerCase(); }
+    if (av<bv) return sortDir==="asc"?-1:1;
+    if (av>bv) return sortDir==="asc"?1:-1;
+    return 0;
+  }),[enriched,sortCol,sortDir]);
+
+  const COLS = [
+    {key:"department",label:"Department"},
+    {key:"month",label:"Month"},
+    {key:"budget",label:"Budget",align:"right"},
+    {key:"actual",label:"Actual",align:"right"},
+    {key:"dollar",label:"$ Variance",align:"right"},
+    {key:"pct",label:"% Variance",align:"right"},
+    {key:"trend",label:"Trend",align:"center",noSort:true},
+  ];
+
+  return (
+    <div className="table-container rounded-lg border border-slate-700/50" style={{background:"#111827"}}>
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr style={{background:"#0d1520",borderBottom:"1px solid #1e3a5f"}}>
+            {COLS.map(c=>(
+              <th key={c.key}
+                className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider ${c.align==="right"?"text-right":c.align==="center"?"text-center":"text-left"}`}
+                style={{color:"#64748b"}} onClick={()=>!c.noSort&&handleSort(c.key)}>
+                {c.label}{!c.noSort&&<SortIcon col={c.key} sortCol={sortCol} sortDir={sortDir}/>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((row,i)=>{
+            const key=`${row.department}|${row.month}`;
+            const isTrend=trendFlags.has(key), isAI=analysisRows.has(key);
+            return (
+              <tr key={i} className={`border-b border-slate-800/60 transition-colors ${isAI?"flagged-row":""}`}
+                style={{background:isAI?"rgba(41,181,232,0.06)":i%2===0?"#111827":"#0f1923",outline:isAI?"1px solid rgba(41,181,232,0.25)":"none"}}>
+                <td className="px-4 py-2.5 text-slate-200 font-medium">{row.department}</td>
+                <td className="px-4 py-2.5 text-slate-400">{row.month}</td>
+                <td className="px-4 py-2.5 text-right text-slate-300">{fmtBig(row.budget)}</td>
+                <td className="px-4 py-2.5 text-right text-slate-300">{fmtBig(row.actual)}</td>
+                <td className={`px-4 py-2.5 text-right ${row.dollar<0?"text-red-400":"text-green-400"}`}>{fmt$(row.dollar)}</td>
+                <td className="px-4 py-2.5 text-right">
+                  <span className={`inline-block px-2 py-0.5 rounded text-xs ${varianceCellClass(row.badness)}`}>{fmtPct(row.pct)}</span>
+                </td>
+                <td className="px-4 py-2.5 text-center text-base">{isTrend?"🔴":""}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Card({title,icon,children,accent}) {
+  return (
+    <div className="rounded-lg p-4 border" style={{background:"#111827",borderColor:accent||"#1e3a5f"}}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-base">{icon}</span>
+        <span className="text-sm font-semibold text-slate-200 uppercase tracking-wide">{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function AnalysisPanel({ data, onAnalysisDone, analysisResult, setAnalysisResult }) {
+  const [status, setStatus] = React.useState("idle");
+  const [errorMsg, setErrorMsg] = React.useState("");
+  const [copied, setCopied] = React.useState(false);
+
+  async function runAnalysis() {
+    setStatus("loading"); setErrorMsg(""); setAnalysisResult(null);
+    const enriched = enrichData(data);
+    try {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          max_tokens: 1024,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: buildPrompt(enriched) },
+          ],
+        }),
+      });
+      if (!res.ok) { const err = await res.text(); throw new Error(`API ${res.status}: ${err}`); }
+      const json = await res.json();
+      const raw = json.choices?.[0]?.message?.content || "";
+      const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/,"").trim();
+      try {
+        const parsed = JSON.parse(text);
+        setAnalysisResult(parsed); onAnalysisDone(parsed); setStatus("done");
+      } catch {
+        setAnalysisResult({ _raw: text }); onAnalysisDone({}); setStatus("done");
+      }
+    } catch(e) { setErrorMsg(e.message); setStatus("error"); }
+  }
+
+  function copyNarrative() {
+    navigator.clipboard.writeText(analysisResult?.cfo_narrative||"").then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-700/50 p-6" style={{background:"#0d1520"}}>
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="text-base font-semibold text-white">❄️ Cortex AI Analysis</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Powered by Snowflake Cortex + Claude AI</p>
+        </div>
+        {status !== "loading" && (
+          <button onClick={runAnalysis} className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+            style={{background:SNOWFLAKE_BLUE,color:"#0d1117"}}>
+            {status==="done"?"↺ Re-run Analysis":"▶ Run Cortex Analysis"}
+          </button>
+        )}
+      </div>
+
+      {status==="idle" && (
+        <div className="text-center py-8 text-slate-600 text-sm border border-dashed border-slate-700/40 rounded-lg">
+          Click "Run Cortex Analysis" to generate AI-powered variance insights
+        </div>
+      )}
+
+      {status==="loading" && (
+        <div className="text-center py-10">
+          <div className="text-2xl mb-3 animate-spin inline-block">❄️</div>
+          <div className="text-sm font-medium" style={{color:SNOWFLAKE_BLUE}}>Cortex is analyzing your variance data…</div>
+          <div className="text-xs text-slate-600 mt-2">Querying Snowflake Cortex inference layer</div>
+        </div>
+      )}
+
+      {status==="error" && (
+        <div className="rounded-lg p-4 border border-red-800/50 bg-red-950/30">
+          <div className="text-sm font-semibold text-red-400 mb-1">⚠ Analysis Failed</div>
+          <div className="text-xs text-red-300/70 mb-3 break-all">{errorMsg}</div>
+          <button onClick={runAnalysis} className="px-4 py-1.5 rounded text-xs font-semibold"
+            style={{background:"#7f1d1d",color:"#fca5a5",border:"1px solid #991b1b"}}>Retry</button>
+        </div>
+      )}
+
+      {status==="done" && analysisResult && (
+        <>
+          {analysisResult._raw ? (
+            <div className="rounded-lg p-4 border border-slate-700/50 bg-slate-900">
+              <div className="text-xs text-yellow-400 mb-2">⚠ Response was not valid JSON — showing raw output</div>
+              <pre className="text-xs text-slate-300 whitespace-pre-wrap">{analysisResult._raw}</pre>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card title="Anomalies Detected" icon="🔍" accent="#1e3a5f">
+                <ul className="space-y-2">
+                  {(analysisResult.anomalies||[]).map((a,i)=>(
+                    <li key={i} className="flex gap-2 text-xs text-slate-300">
+                      <span style={{color:SNOWFLAKE_BLUE}} className="shrink-0 mt-0.5">▸</span>{a}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+              <Card title="Root Cause Hypotheses" icon="🧠" accent="#1e3a5f">
+                <div className="space-y-3">
+                  {(analysisResult.root_causes||[]).map((rc,i)=>(
+                    <div key={i} className="rounded p-2.5" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold" style={{color:SNOWFLAKE_BLUE}}>{rc.department}</span>
+                        <span className="text-xs text-slate-500">·</span>
+                        <span className="text-xs text-slate-400">{rc.month}</span>
+                      </div>
+                      <p className="text-xs text-slate-300">{rc.hypothesis}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <Card title="Risk Flags" icon="🚩" accent="#3b1f1f">
+                <ul className="space-y-2">
+                  {(analysisResult.risk_flags||[]).map((r,i)=>(
+                    <li key={i} className="flex gap-2 text-xs text-slate-300">
+                      <span className="text-red-400 shrink-0 mt-0.5">▸</span>{r}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+              <Card title="CFO Narrative" icon="📋" accent="#1a2e1a">
+                <div className="rounded-lg p-3 mb-3 text-xs leading-relaxed text-slate-200" style={{background:"#0a1a0a",border:"1px solid #1a3a1a"}}>
+                  {analysisResult.cfo_narrative}
+                </div>
+                <button onClick={copyNarrative} className="w-full py-1.5 rounded text-xs font-semibold transition-all"
+                  style={{background:copied?"#14532d":"#1c3a1c",color:copied?"#86efac":"#4ade80",border:`1px solid ${copied?"#166534":"#1a3a1a"}`}}>
+                  {copied?"✓ Copied!":"Copy to Clipboard"}
+                </button>
+              </Card>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function StickyBar({ enrichedData, cfoNarrative }) {
+  const [copiedNarr,setCopiedNarr]=React.useState(false);
+  const [copiedCSV,setCopiedCSV]=React.useState(false);
+
+  function copyNarrative() {
+    if (!cfoNarrative) return;
+    navigator.clipboard.writeText(cfoNarrative).then(()=>{setCopiedNarr(true);setTimeout(()=>setCopiedNarr(false),2000);});
+  }
+  function downloadCSV() {
+    const header="Department,Month,Budget,Actual,$ Variance,% Variance\n";
+    const rows=enrichedData.map(r=>`${r.department},${r.month},${r.budget},${r.actual},${r.dollar},${r.pct.toFixed(2)}%`).join("\n");
+    const blob=new Blob([header+rows],{type:"text/csv"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=`fpa_variance_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    setCopiedCSV(true); setTimeout(()=>setCopiedCSV(false),2000);
+  }
+  function exportSummary() {
+    const date=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+    const tableRows=enrichedData.map(r=>`<tr><td>${r.department}</td><td>${r.month}</td><td>$${r.budget.toLocaleString()}</td><td>$${r.actual.toLocaleString()}</td><td style="color:${r.dollar<0?"#dc2626":"#16a34a"}">${fmt$(r.dollar)}</td><td>${fmtPct(r.pct)}</td></tr>`).join("");
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>FP&A Executive Summary</title>
+<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;color:#1e293b;padding:0 24px}h1{font-size:22px;font-weight:700;color:#0f172a;margin-bottom:4px}.sub{font-size:13px;color:#64748b;margin-bottom:32px}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:32px}th{background:#0d1520;color:#fff;padding:8px 12px;text-align:left;font-weight:600}td{padding:7px 12px;border-bottom:1px solid #e2e8f0}tr:nth-child(even) td{background:#f8fafc}.narrative{background:#f0fdf4;border-left:4px solid #16a34a;padding:16px 20px;border-radius:4px;font-size:14px;line-height:1.7}.footer{margin-top:48px;font-size:11px;color:#94a3b8;text-align:center}</style></head>
+<body><h1>❄️ Cortex FP&amp;A — Variance Executive Summary</h1><div class="sub">Generated ${date} · Powered by Snowflake Cortex</div>
+<table><thead><tr><th>Department</th><th>Month</th><th>Budget</th><th>Actual</th><th>$ Variance</th><th>% Variance</th></tr></thead><tbody>${tableRows}</tbody></table>
+${cfoNarrative?`<div class="narrative"><strong>CFO Narrative</strong><br/><br/>${cfoNarrative}</div>`:""}
+<div class="footer">Built with Snowflake Cortex ❄️ and Claude AI · ${AUTHOR_HANDLE}</div></body></html>`;
+    const blob=new Blob([html],{type:"text/html"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=`fpa_executive_summary_${new Date().toISOString().slice(0,10)}.html`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  const btn="px-4 py-2 rounded text-xs font-semibold transition-all hover:opacity-90 active:scale-95";
+  return (
+    <div className="sticky-bar px-6 py-3 flex items-center gap-3 border-t border-slate-700/50" style={{background:"#0a0f18"}}>
+      <span className="text-xs text-slate-500 mr-2 hidden sm:block">Export:</span>
+      <button onClick={copyNarrative} disabled={!cfoNarrative} className={btn}
+        style={{background:copiedNarr?"#14532d":"#1c2a3a",color:copiedNarr?"#86efac":"#94a3b8",border:"1px solid #334155",opacity:cfoNarrative?1:0.4}}>
+        {copiedNarr?"✓ Copied!":"📋 Copy CFO Narrative"}
+      </button>
+      <button onClick={downloadCSV} className={btn}
+        style={{background:copiedCSV?"#14532d":"#1c2a3a",color:copiedCSV?"#86efac":"#94a3b8",border:"1px solid #334155"}}>
+        {copiedCSV?"✓ Downloaded!":"⬇ Download CSV"}
+      </button>
+      <button onClick={exportSummary} className={btn}
+        style={{background:"#1c2a3a",color:"#94a3b8",border:"1px solid #334155"}}>
+        📄 Export Summary
+      </button>
+      <div className="ml-auto text-xs text-slate-600 hidden md:block">❄️ Snowflake Cortex FP&amp;A</div>
+    </div>
+  );
+}
+
+// ── Root App ─────────────────────────────────────────────────
+function App() {
+  const [data,setData]=React.useState(DEMO_DATA);
+  const [usingDemo,setUsingDemo]=React.useState(true);
+  const [analysisResult,setAnalysisResult]=React.useState(null);
+  const [analysisRows,setAnalysisRows]=React.useState(new Set());
+
+  function useDemo(){setData(DEMO_DATA);setUsingDemo(true);setAnalysisResult(null);setAnalysisRows(new Set());}
+  function uploadCSV(rows){setData(rows);setUsingDemo(false);setAnalysisResult(null);setAnalysisRows(new Set());}
+
+  function onAnalysisDone(result) {
+    const rows=new Set();
+    (result.anomalies||[]).forEach(a=>{
+      data.forEach(r=>{ if(a.toLowerCase().includes(r.department.toLowerCase())&&a.toLowerCase().includes(r.month.toLowerCase())) rows.add(`${r.department}|${r.month}`); });
+    });
+    (result.root_causes||[]).forEach(rc=>rows.add(`${rc.department}|${rc.month}`));
+    setAnalysisRows(rows);
+  }
+
+  const enriched=React.useMemo(()=>enrichData(data),[data]);
+  const cfoNarrative=analysisResult?.cfo_narrative||"";
+
+  const totalBudget=enriched.reduce((s,r)=>s+r.budget,0);
+  const totalActual=enriched.reduce((s,r)=>s+r.actual,0);
+  const totalDelta=totalActual-totalBudget;
+  const redCount=enriched.filter(r=>r.badness>5).length;
+
+  const stats=[
+    {label:"Total Budget",   value:"$"+(totalBudget/1000000).toFixed(2)+"M", color:"#64748b"},
+    {label:"Total Actual",   value:"$"+(totalActual/1000000).toFixed(2)+"M", color:SNOWFLAKE_BLUE},
+    {label:"Net Variance",   value:fmt$(totalDelta), color:totalDelta>=0?"#4ade80":"#f87171"},
+    {label:"Red Variances",  value:redCount+" rows",  color:"#f87171"},
+  ];
+
+  return (
+    <div className="min-h-screen pb-20" style={{background:"#0d1117",color:"#e2e8f0"}}>
+      <Header/>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        {/* Data source */}
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg border border-slate-700/40" style={{background:"#0d1520"}}>
+          <div>
+            <div className="text-sm font-semibold text-slate-200 mb-0.5">Data Source</div>
+            <div className="text-xs text-slate-500">Switch between demo data or upload your own CSV</div>
+          </div>
+          <DataInput usingDemo={usingDemo} onUseDemo={useDemo} onCSVUpload={uploadCSV}/>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {stats.map((s,i)=>(
+            <div key={i} className="rounded-lg p-4 border border-slate-700/40" style={{background:"#111827"}}>
+              <div className="text-xs text-slate-500 mb-1">{s.label}</div>
+              <div className="text-xl font-bold" style={{color:s.color}}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-300">📊 Budget vs. Actual — All Departments</h2>
+            <div className="flex gap-3 text-xs text-slate-500">
+              <span><span className="inline-block w-2 h-2 rounded-sm bg-red-900 mr-1"></span>&gt; -5% bad</span>
+              <span><span className="inline-block w-2 h-2 rounded-sm bg-yellow-900 mr-1"></span>-2 to -5%</span>
+              <span><span className="inline-block w-2 h-2 rounded-sm bg-green-900 mr-1"></span>within 2%</span>
+            </div>
+          </div>
+          <VarianceTable data={data} analysisRows={analysisRows}/>
+        </div>
+
+        {/* Analysis */}
+        <AnalysisPanel data={data} onAnalysisDone={onAnalysisDone} analysisResult={analysisResult} setAnalysisResult={setAnalysisResult}/>
+
+      </main>
+      <footer className="text-center text-xs text-slate-600 py-4 pb-20">
+        Built with Snowflake Cortex ❄️ and Claude AI — {AUTHOR_HANDLE}
+      </footer>
+      <StickyBar enrichedData={enriched} cfoNarrative={cfoNarrative}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
