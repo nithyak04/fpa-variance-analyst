@@ -107,19 +107,138 @@ function fmt$(n) {
 function fmtPct(n) { return (n>=0?"+":"")+n.toFixed(1)+"%"; }
 function fmtBig(n) { return "$"+Math.abs(n).toLocaleString(); }
 
+// ── Smart CSV Parser ────────────────────────────────────────
+// Handles: any column order, missing headers, merged dept cells,
+// messy number formats ($1.2M, 1,000,000), full/partial month names,
+// date strings (Jan-24, 01/2024, Q1), extra junk rows, tabs/semicolons
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/).filter(l=>l.trim());
-  const rows = [];
-  let start = 0;
-  const first = lines[0].split(",").map(c=>c.trim().toLowerCase());
-  if (first.includes("department")||first.includes("month")) start = 1;
-  for (let i = start; i < lines.length; i++) {
-    const cols = lines[i].split(",").map(c=>c.trim().replace(/^"|"$/g,""));
-    if (cols.length < 4) continue;
-    const [department, month, budget, actual] = cols;
-    const b = parseFloat(budget.replace(/[$,]/g,"")), a = parseFloat(actual.replace(/[$,]/g,""));
-    if (!isNaN(b) && !isNaN(a)) rows.push({ department, month, budget: b, actual: a });
+  // Normalize line endings and split
+  const rawLines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+
+  // Tokenize a line — handles quoted fields, tabs, semicolons, commas
+  function tokenize(line) {
+    const sep = line.includes("\t") ? "\t" : line.includes(";") ? ";" : ",";
+    const tokens = []; let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (!inQ && c === sep) { tokens.push(cur.trim()); cur = ""; continue; }
+      cur += c;
+    }
+    tokens.push(cur.trim());
+    return tokens;
   }
+
+  // Parse a number from messy strings: $1.2M, (500), 1,000,000, 1.5k
+  function parseNum(s) {
+    if (!s) return NaN;
+    s = String(s).trim().replace(/[$€£¥\s]/g,"");
+    const neg = s.startsWith("(") && s.endsWith(")");
+    s = s.replace(/[()]/g,"");
+    let mul = 1;
+    if (/[Mm]$/.test(s)) { mul = 1000000; s = s.replace(/[Mm]$/,""); }
+    else if (/[Kk]$/.test(s)) { mul = 1000; s = s.replace(/[Kk]$/,""); }
+    s = s.replace(/,/g,"");
+    const n = parseFloat(s) * mul;
+    return isNaN(n) ? NaN : (neg ? -n : n);
+  }
+
+  // Normalize month — accepts Jan, January, 1, 01, Jan-24, 01/2024, Q1 etc.
+  const MONTH_NAMES = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const Q_MAP = { q1:"Mar", q2:"Jun", q3:"Sep", q4:"Dec" };
+  function normalizeMonth(s) {
+    if (!s) return null;
+    s = String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+    // Quarter
+    if (/^q[1-4]$/.test(s)) return Q_MAP[s];
+    // Full or partial month name
+    for (let i = 0; i < MONTH_NAMES.length; i++) {
+      if (s.startsWith(MONTH_NAMES[i])) return MONTH_LABELS[i];
+    }
+    // Numeric month 1-12
+    const n = parseInt(s);
+    if (!isNaN(n) && n >= 1 && n <= 12) return MONTH_LABELS[n-1];
+    return null;
+  }
+
+  // Score how likely a cell value is a column type
+  function scoreCols(headers) {
+    const h = headers.map(h => String(h).toLowerCase().replace(/[^a-z]/g,""));
+    function best(keywords) {
+      let bestIdx = -1, bestScore = -1;
+      h.forEach((hh, i) => {
+        const score = keywords.reduce((s, kw) => s + (hh.includes(kw) ? kw.length : 0), 0);
+        if (score > bestScore) { bestScore = score; bestIdx = i; }
+      });
+      return bestScore > 0 ? bestIdx : -1;
+    }
+    return {
+      dept:   best(["department","dept","team","division","group","cost","center","bu","business"]),
+      month:  best(["month","period","mo","date","time","week","quarter"]),
+      budget: best(["budget","plan","target","forecast","bud","planned"]),
+      actual: best(["actual","actuals","real","result","spent","act","ytd","amount"]),
+    };
+  }
+
+  // Find the best header row (the one whose columns score highest)
+  let headerIdx = -1, colMap = { dept:-1, month:-1, budget:-1, actual:-1 };
+  for (let i = 0; i < Math.min(rawLines.length, 20); i++) {
+    const tokens = tokenize(rawLines[i]);
+    if (tokens.length < 2) continue;
+    const scores = scoreCols(tokens);
+    const found = Object.values(scores).filter(v => v >= 0).length;
+    if (found >= 3 && found > Object.values(colMap).filter(v=>v>=0).length) {
+      headerIdx = i; colMap = scores;
+    }
+  }
+
+  // If no header found, try to infer from first data row positions
+  const dataStart = headerIdx >= 0 ? headerIdx + 1 : 0;
+
+  // If columns still not identified, do positional fallback (dept, month, budget, actual)
+  if (colMap.dept < 0 || colMap.budget < 0 || colMap.actual < 0) {
+    colMap = { dept: 0, month: 1, budget: 2, actual: 3 };
+  }
+
+  const rows = [];
+  let lastDept = "";
+
+  for (let i = dataStart; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+    if (!line) continue;
+    const cols = tokenize(line);
+    if (cols.length < 2) continue;
+
+    // Skip obvious junk rows (totals, subtotals, notes)
+    const lineL = line.toLowerCase();
+    if (/^\s*(total|subtotal|grand|sum|average|note|source|#)/i.test(lineL)) continue;
+
+    const rawDept   = colMap.dept   >= 0 ? cols[colMap.dept]   : "";
+    const rawMonth  = colMap.month  >= 0 ? cols[colMap.month]  : "";
+    const rawBudget = colMap.budget >= 0 ? cols[colMap.budget] : "";
+    const rawActual = colMap.actual >= 0 ? cols[colMap.actual] : "";
+
+    // Support merged dept cells (blank dept = same as last row)
+    const dept = rawDept.trim() || lastDept;
+    if (dept) lastDept = dept;
+
+    const month = normalizeMonth(rawMonth);
+    const budget = parseNum(rawBudget);
+    const actual = parseNum(rawActual);
+
+    // Must have valid numbers and either a dept or a month
+    if (isNaN(budget) || isNaN(actual)) continue;
+    if (!dept && !month) continue;
+
+    rows.push({
+      department: dept || "Unknown",
+      month: month || rawMonth || "?",
+      budget,
+      actual,
+    });
+  }
+
   return rows;
 }
 
