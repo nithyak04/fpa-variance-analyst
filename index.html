@@ -251,14 +251,65 @@ function buildPrompt(enriched) {
   return `${header}\n${div}\n${lines.join("\n")}`;
 }
 
-const SYSTEM_PROMPT = `You are a senior FP&A analyst at a SaaS company using Snowflake Cortex to analyze budget vs actual variances. You are direct, concise, and write like a CFO expects — no fluff, no bullet-point padding. Analyze the variance data provided and return a JSON object with exactly these fields:
+const SYSTEM_PROMPT = `You are a senior FP&A analyst at a SaaS company using Snowflake Cortex. You write like a CFO expects — direct, specific, no filler. Always cite exact dollar amounts and percentages. Return ONLY a valid JSON object with exactly these fields:
+
 {
-  "anomalies": [array of strings, each one a specific anomaly worth flagging, max 4],
-  "root_causes": [array of objects: {department, month, hypothesis} for the top 3-4 worst variances],
-  "risk_flags": [array of strings, cross-department risks or patterns, max 3],
-  "cfo_narrative": "Two to three sentence paragraph written for a CFO or board. Past tense. Specific numbers. No hedge words like may or could."
+  "summary": {
+    "total_budget": number,
+    "total_actual": number,
+    "net_variance_dollar": number,
+    "net_variance_pct": number,
+    "worst_department": string,
+    "best_department": string,
+    "overall_health": "on-track" | "at-risk" | "critical"
+  },
+  "anomalies": [
+    {
+      "title": "short title",
+      "detail": "2-3 sentences with exact numbers explaining what happened and why it matters",
+      "severity": "high" | "medium" | "low",
+      "department": string,
+      "month": string
+    }
+  ],
+  "root_causes": [
+    {
+      "department": string,
+      "month": string,
+      "variance_dollar": number,
+      "variance_pct": number,
+      "hypothesis": "specific hypothesis with context",
+      "contributing_factors": ["factor 1", "factor 2"],
+      "confidence": "high" | "medium" | "low"
+    }
+  ],
+  "department_insights": [
+    {
+      "department": string,
+      "trend": "improving" | "deteriorating" | "stable" | "volatile",
+      "insight": "2-3 sentences on this department's pattern across months",
+      "action": "specific recommended action"
+    }
+  ],
+  "risk_flags": [
+    {
+      "flag": "risk description with specific numbers",
+      "impact": "what this means for the business",
+      "urgency": "immediate" | "watch" | "monitor"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": 1,
+      "action": "specific action to take",
+      "owner": "which department or role owns this",
+      "expected_impact": "what fixing this achieves"
+    }
+  ],
+  "cfo_narrative": "Four to five sentence paragraph for a CFO or board. Past tense. Cite specific dollar amounts and percentages. Name the worst and best performing departments. End with one forward-looking sentence about the biggest risk to address."
 }
-Return only valid JSON. No markdown, no explanation outside the JSON.`;
+
+Return only valid JSON. No markdown fences. No commentary outside the JSON.`;
 
 // ── Components ──────────────────────────────────────────────
 
@@ -406,7 +457,7 @@ function AnalysisPanel({ data, onAnalysisDone, analysisResult, setAnalysisResult
         },
         body: JSON.stringify({
           model: "gpt-4o",
-          max_tokens: 1024,
+          max_tokens: 3000,
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: buildPrompt(enriched) },
@@ -476,41 +527,156 @@ function AnalysisPanel({ data, onAnalysisDone, analysisResult, setAnalysisResult
               <pre className="text-xs text-slate-300 whitespace-pre-wrap">{analysisResult._raw}</pre>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card title="Anomalies Detected" icon="🔍" accent="#1e3a5f">
-                <ul className="space-y-2">
-                  {(analysisResult.anomalies||[]).map((a,i)=>(
-                    <li key={i} className="flex gap-2 text-xs text-slate-300">
-                      <span style={{color:SNOWFLAKE_BLUE}} className="shrink-0 mt-0.5">▸</span>{a}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-              <Card title="Root Cause Hypotheses" icon="🧠" accent="#1e3a5f">
-                <div className="space-y-3">
-                  {(analysisResult.root_causes||[]).map((rc,i)=>(
-                    <div key={i} className="rounded p-2.5" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold" style={{color:SNOWFLAKE_BLUE}}>{rc.department}</span>
-                        <span className="text-xs text-slate-500">·</span>
-                        <span className="text-xs text-slate-400">{rc.month}</span>
-                      </div>
-                      <p className="text-xs text-slate-300">{rc.hypothesis}</p>
+            <div className="space-y-4">
+
+              {/* Health Summary Bar */}
+              {analysisResult.summary && (() => {
+                const s = analysisResult.summary;
+                const healthColor = s.overall_health==="on-track" ? "#4ade80" : s.overall_health==="at-risk" ? "#facc15" : "#f87171";
+                const healthBg = s.overall_health==="on-track" ? "#14532d" : s.overall_health==="at-risk" ? "#713f12" : "#7f1d1d";
+                return (
+                  <div className="rounded-lg p-4 border border-slate-700/40 flex flex-wrap gap-6 items-center" style={{background:"#111827"}}>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-1">Overall Health</div>
+                      <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style={{background:healthBg,color:healthColor}}>
+                        {s.overall_health}
+                      </span>
                     </div>
-                  ))}
+                    <div><div className="text-xs text-slate-500 mb-1">Net Variance</div>
+                      <div className="text-sm font-bold" style={{color: s.net_variance_dollar>=0?"#4ade80":"#f87171"}}>
+                        {s.net_variance_dollar>=0?"+":""}{s.net_variance_dollar?.toLocaleString ? "$"+Math.abs(s.net_variance_dollar).toLocaleString() : s.net_variance_dollar} ({s.net_variance_pct>=0?"+":""}{typeof s.net_variance_pct==="number"?s.net_variance_pct.toFixed(1):s.net_variance_pct}%)
+                      </div>
+                    </div>
+                    <div><div className="text-xs text-slate-500 mb-1">Worst Dept</div><div className="text-sm font-semibold text-red-400">{s.worst_department}</div></div>
+                    <div><div className="text-xs text-slate-500 mb-1">Best Dept</div><div className="text-sm font-semibold text-green-400">{s.best_department}</div></div>
+                  </div>
+                );
+              })()}
+
+              {/* Anomalies */}
+              <Card title="Anomalies Detected" icon="🔍" accent="#1e3a5f">
+                <div className="space-y-3">
+                  {(analysisResult.anomalies||[]).map((a,i)=>{
+                    const sevColor = a.severity==="high" ? "#f87171" : a.severity==="medium" ? "#facc15" : "#94a3b8";
+                    const sevBg    = a.severity==="high" ? "#7f1d1d" : a.severity==="medium" ? "#713f12" : "#1e293b";
+                    return (
+                      <div key={i} className="rounded-lg p-3" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-xs font-bold text-slate-100">{a.title||a}</span>
+                          {a.severity && <span className="px-1.5 py-0.5 rounded text-xs font-semibold uppercase" style={{background:sevBg,color:sevColor}}>{a.severity}</span>}
+                          {a.department && <span className="text-xs text-slate-500">{a.department} · {a.month}</span>}
+                        </div>
+                        {a.detail && <p className="text-xs text-slate-400 leading-relaxed">{a.detail}</p>}
+                      </div>
+                    );
+                  })}
                 </div>
               </Card>
-              <Card title="Risk Flags" icon="🚩" accent="#3b1f1f">
-                <ul className="space-y-2">
-                  {(analysisResult.risk_flags||[]).map((r,i)=>(
-                    <li key={i} className="flex gap-2 text-xs text-slate-300">
-                      <span className="text-red-400 shrink-0 mt-0.5">▸</span>{r}
-                    </li>
-                  ))}
-                </ul>
+
+              {/* Root Causes */}
+              <Card title="Root Cause Analysis" icon="🧠" accent="#1e3a5f">
+                <div className="space-y-3">
+                  {(analysisResult.root_causes||[]).map((rc,i)=>{
+                    const confColor = rc.confidence==="high"?"#4ade80":rc.confidence==="medium"?"#facc15":"#94a3b8";
+                    return (
+                      <div key={i} className="rounded-lg p-3" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="text-xs font-bold" style={{color:SNOWFLAKE_BLUE}}>{rc.department}</span>
+                          <span className="text-xs text-slate-500">·</span>
+                          <span className="text-xs text-slate-400">{rc.month}</span>
+                          {rc.variance_dollar !== undefined && (
+                            <span className={`text-xs font-semibold ${rc.variance_dollar<0?"text-red-400":"text-green-400"}`}>
+                              {rc.variance_dollar>=0?"+":""}{typeof rc.variance_dollar==="number"?"$"+Math.abs(rc.variance_dollar).toLocaleString():rc.variance_dollar}
+                              {rc.variance_pct !== undefined && ` (${rc.variance_pct>=0?"+":""}${typeof rc.variance_pct==="number"?rc.variance_pct.toFixed(1):rc.variance_pct}%)`}
+                            </span>
+                          )}
+                          {rc.confidence && <span className="ml-auto text-xs" style={{color:confColor}}>● {rc.confidence} confidence</span>}
+                        </div>
+                        <p className="text-xs text-slate-300 mb-2">{rc.hypothesis}</p>
+                        {(rc.contributing_factors||[]).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {rc.contributing_factors.map((f,j)=>(
+                              <span key={j} className="px-2 py-0.5 rounded text-xs text-slate-400" style={{background:"#1e3a5f"}}>{f}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </Card>
+
+              {/* Department Insights */}
+              {(analysisResult.department_insights||[]).length > 0 && (
+                <Card title="Department Insights" icon="📈" accent="#1e3a5f">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(analysisResult.department_insights||[]).map((d,i)=>{
+                      const trendIcon = d.trend==="improving"?"↗":"deteriorating"?"↘":d.trend==="volatile"?"↕":"→";
+                      const trendColor = d.trend==="improving"?"#4ade80":d.trend==="deteriorating"?"#f87171":d.trend==="volatile"?"#facc15":"#94a3b8";
+                      return (
+                        <div key={i} className="rounded-lg p-3" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-slate-100">{d.department}</span>
+                            <span className="text-xs font-semibold" style={{color:trendColor}}>{trendIcon} {d.trend}</span>
+                          </div>
+                          <p className="text-xs text-slate-400 leading-relaxed mb-2">{d.insight}</p>
+                          {d.action && <div className="text-xs rounded p-1.5" style={{background:"#0a1a2a",color:SNOWFLAKE_BLUE}}>→ {d.action}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              )}
+
+              {/* Risk Flags */}
+              <Card title="Risk Flags" icon="🚩" accent="#3b1f1f">
+                <div className="space-y-3">
+                  {(analysisResult.risk_flags||[]).map((r,i)=>{
+                    const urgColor = r.urgency==="immediate"?"#f87171":r.urgency==="watch"?"#facc15":"#94a3b8";
+                    const urgBg    = r.urgency==="immediate"?"#7f1d1d":r.urgency==="watch"?"#713f12":"#1e293b";
+                    return (
+                      <div key={i} className="rounded-lg p-3" style={{background:"#1a0a0a",border:"1px solid #3b1f1f"}}>
+                        <div className="flex items-start gap-2">
+                          <span className="text-red-400 shrink-0 mt-0.5">▸</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs text-slate-200">{r.flag||r}</span>
+                              {r.urgency && <span className="px-1.5 py-0.5 rounded text-xs font-semibold uppercase shrink-0" style={{background:urgBg,color:urgColor}}>{r.urgency}</span>}
+                            </div>
+                            {r.impact && <p className="text-xs text-slate-500">{r.impact}</p>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+
+              {/* Recommendations */}
+              {(analysisResult.recommendations||[]).length > 0 && (
+                <Card title="Recommended Actions" icon="✅" accent="#1a2e1a">
+                  <div className="space-y-3">
+                    {(analysisResult.recommendations||[]).map((rec,i)=>(
+                      <div key={i} className="rounded-lg p-3 flex gap-3" style={{background:"#0a1a0a",border:"1px solid #1a3a1a"}}>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{background:"#14532d",color:"#4ade80"}}>
+                          {rec.priority||i+1}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xs font-semibold text-slate-100 mb-1">{rec.action}</div>
+                          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                            {rec.owner && <span>👤 {rec.owner}</span>}
+                            {rec.expected_impact && <span>🎯 {rec.expected_impact}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* CFO Narrative */}
               <Card title="CFO Narrative" icon="📋" accent="#1a2e1a">
-                <div className="rounded-lg p-3 mb-3 text-xs leading-relaxed text-slate-200" style={{background:"#0a1a0a",border:"1px solid #1a3a1a"}}>
+                <div className="rounded-lg p-4 mb-3 text-sm leading-relaxed text-slate-200" style={{background:"#0a1a0a",border:"1px solid #1a3a1a"}}>
                   {analysisResult.cfo_narrative}
                 </div>
                 <button onClick={copyNarrative} className="w-full py-1.5 rounded text-xs font-semibold transition-all"
@@ -518,6 +684,7 @@ function AnalysisPanel({ data, onAnalysisDone, analysisResult, setAnalysisResult
                   {copied?"✓ Copied!":"Copy to Clipboard"}
                 </button>
               </Card>
+
             </div>
           )}
         </>
