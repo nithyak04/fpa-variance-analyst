@@ -8,745 +8,623 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    * { font-family: 'Inter', sans-serif; }
-    body { background: #0d1117; }
-    @keyframes pulse-border {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(41,181,232,0.4); }
-      50% { box-shadow: 0 0 0 4px rgba(41,181,232,0.15); }
+    *, *::before, *::after { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    html { scroll-behavior: smooth; }
+    body { background: #070d16; margin: 0; color: #e2e8f0; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #29B5E8; border-radius: 99px; }
+
+    /* Glow effects */
+    .glow-blue { box-shadow: 0 0 24px rgba(41,181,232,0.15); }
+    .glow-blue-sm { box-shadow: 0 0 12px rgba(41,181,232,0.12); }
+    .btn-primary { background: linear-gradient(135deg,#29B5E8,#1a8fc4); color:#fff; transition:all .2s; }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 20px rgba(41,181,232,0.35); }
+    .btn-primary:active { transform:translateY(0); }
+
+    /* Header gradient underline */
+    .brand-text {
+      background: linear-gradient(90deg, #fff 0%, #29B5E8 60%, #7dd3fc 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .flagged-row { animation: pulse-border 2s ease-in-out infinite; }
-    .sticky-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #161b22; }
-    ::-webkit-scrollbar-thumb { background: #29B5E8; border-radius: 3px; }
-    .table-container { overflow-x: auto; }
-    th { cursor: pointer; user-select: none; }
-    th:hover { background: #1c2a3a !important; }
+
+    /* Glass card */
+    .glass { background: rgba(15,25,40,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(41,181,232,0.12); }
+    .glass-hover:hover { border-color: rgba(41,181,232,0.28); transition: border-color .2s; }
+
+    /* Table */
+    .data-table th { cursor: pointer; user-select: none; transition: background .15s; }
+    .data-table th:hover { background: rgba(41,181,232,0.08) !important; }
+    .data-table tr { transition: background .15s; }
+    .data-table tbody tr:hover { background: rgba(41,181,232,0.05) !important; }
+
+    /* Flagged row pulse */
+    @keyframes flagPulse {
+      0%,100% { box-shadow: inset 0 0 0 1px rgba(41,181,232,0.2); }
+      50%      { box-shadow: inset 0 0 0 1px rgba(41,181,232,0.5), 0 0 12px rgba(41,181,232,0.1); }
+    }
+    .flagged-row { animation: flagPulse 2.4s ease-in-out infinite; background: rgba(41,181,232,0.05) !important; }
+
+    /* Animated gradient bg strip */
+    @keyframes gradShift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .hero-strip {
+      background: linear-gradient(120deg,#070d16,#0a1a2e,#091524,#0d2137,#070d16);
+      background-size: 300% 300%;
+      animation: gradShift 12s ease infinite;
+    }
+
+    /* Snowflake spin on load */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 1.2s linear infinite; display:inline-block; }
+
+    /* Fade in */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+    .fade-up { animation: fadeUp .4s ease both; }
+    .fade-up-2 { animation: fadeUp .4s .1s ease both; }
+    .fade-up-3 { animation: fadeUp .4s .2s ease both; }
+
+    /* Badge pill */
+    .pill { display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;letter-spacing:.03em; }
+
+    /* Sticky bar */
+    .sticky-bar { position:fixed;bottom:0;left:0;right:0;z-index:50; backdrop-filter:blur(16px); }
+
+    /* Section divider */
+    .section-label { font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#29B5E8;margin-bottom:12px; }
   </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script type="text/babel">
-// ============================================================
-// CONFIG — edit these two lines, then save and refresh
-// ============================================================
-// API key stored securely in Vercel — calls go through /api/analyze
-const AUTHOR_HANDLE = "@yourhandle";
-// ============================================================
+// ── Config ───────────────────────────────────────────────────
+const OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE";
+const AUTHOR_NAME    = "Nithya Kuppa";
+const AUTHOR_LINKEDIN = "https://www.linkedin.com/in/nithya-kuppa/";
+const SB = "#29B5E8";
 
-const SNOWFLAKE_BLUE = "#29B5E8";
-
+// ── Demo Data ─────────────────────────────────────────────────
 const DEMO_DATA = [
-  { department: "Sales",           month: "Jan", budget: 500000, actual: 423000 },
-  { department: "Sales",           month: "Feb", budget: 520000, actual: 498000 },
-  { department: "Sales",           month: "Mar", budget: 540000, actual: 461000 },
-  { department: "Marketing",       month: "Jan", budget: 180000, actual: 214000 },
-  { department: "Marketing",       month: "Feb", budget: 185000, actual: 227000 },
-  { department: "Marketing",       month: "Mar", budget: 190000, actual: 198000 },
-  { department: "Engineering",     month: "Jan", budget: 320000, actual: 318000 },
-  { department: "Engineering",     month: "Feb", budget: 325000, actual: 331000 },
-  { department: "Engineering",     month: "Mar", budget: 330000, actual: 342000 },
-  { department: "G&A",             month: "Jan", budget: 95000,  actual: 92000  },
-  { department: "G&A",             month: "Feb", budget: 95000,  actual: 108000 },
-  { department: "G&A",             month: "Mar", budget: 95000,  actual: 97000  },
-  { department: "Customer Success",month: "Jan", budget: 140000, actual: 137000 },
-  { department: "Customer Success",month: "Feb", budget: 145000, actual: 144000 },
-  { department: "Customer Success",month: "Mar", budget: 150000, actual: 163000 },
-  { department: "Product",         month: "Jan", budget: 210000, actual: 208000 },
-  { department: "Product",         month: "Feb", budget: 215000, actual: 219000 },
-  { department: "Product",         month: "Mar", budget: 220000, actual: 247000 },
+  {department:"Sales",           month:"Jan",budget:500000,actual:423000},
+  {department:"Sales",           month:"Feb",budget:520000,actual:498000},
+  {department:"Sales",           month:"Mar",budget:540000,actual:461000},
+  {department:"Marketing",       month:"Jan",budget:180000,actual:214000},
+  {department:"Marketing",       month:"Feb",budget:185000,actual:227000},
+  {department:"Marketing",       month:"Mar",budget:190000,actual:198000},
+  {department:"Engineering",     month:"Jan",budget:320000,actual:318000},
+  {department:"Engineering",     month:"Feb",budget:325000,actual:331000},
+  {department:"Engineering",     month:"Mar",budget:330000,actual:342000},
+  {department:"G&A",             month:"Jan",budget:95000, actual:92000 },
+  {department:"G&A",             month:"Feb",budget:95000, actual:108000},
+  {department:"G&A",             month:"Mar",budget:95000, actual:97000 },
+  {department:"Customer Success",month:"Jan",budget:140000,actual:137000},
+  {department:"Customer Success",month:"Feb",budget:145000,actual:144000},
+  {department:"Customer Success",month:"Mar",budget:150000,actual:163000},
+  {department:"Product",         month:"Jan",budget:210000,actual:208000},
+  {department:"Product",         month:"Feb",budget:215000,actual:219000},
+  {department:"Product",         month:"Mar",budget:220000,actual:247000},
 ];
 
 const REVENUE_DEPTS = new Set(["Sales"]);
-const MONTH_ORDER = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+const MONTH_ORDER = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
 
+// ── Math helpers ──────────────────────────────────────────────
 function calcVariance(row) {
   const dollar = row.actual - row.budget;
   const pct = (dollar / row.budget) * 100;
-  const isRevenue = REVENUE_DEPTS.has(row.department);
-  const badness = isRevenue ? -pct : pct;
-  return { dollar, pct, badness };
+  const badness = REVENUE_DEPTS.has(row.department) ? -pct : pct;
+  return {dollar, pct, badness};
 }
-
-function enrichData(rows) {
-  return rows.map(r => { const v = calcVariance(r); return { ...r, ...v }; });
-}
+function enrichData(rows) { return rows.map(r=>({...r,...calcVariance(r)})); }
 
 function getTrendFlags(enriched) {
   const byDept = {};
-  enriched.forEach(r => { if (!byDept[r.department]) byDept[r.department] = []; byDept[r.department].push(r); });
+  enriched.forEach(r=>{if(!byDept[r.department])byDept[r.department]=[];byDept[r.department].push(r);});
   const flagged = new Set();
-  Object.values(byDept).forEach(rows => {
-    const sorted = [...rows].sort((a,b) => (MONTH_ORDER[a.month]||99)-(MONTH_ORDER[b.month]||99));
-    let streak = 0;
-    sorted.forEach((r, i) => {
-      if (r.badness > 5) {
-        streak++;
-        if (streak >= 2) { flagged.add(`${r.department}|${r.month}`); flagged.add(`${sorted[i-1].department}|${sorted[i-1].month}`); }
-      } else { streak = 0; }
+  Object.values(byDept).forEach(rows=>{
+    const sorted=[...rows].sort((a,b)=>(MONTH_ORDER[a.month]||99)-(MONTH_ORDER[b.month]||99));
+    let streak=0;
+    sorted.forEach((r,i)=>{
+      if(r.badness>5){streak++;if(streak>=2){flagged.add(`${r.department}|${r.month}`);flagged.add(`${sorted[i-1].department}|${sorted[i-1].month}`);}}
+      else streak=0;
     });
   });
   return flagged;
 }
 
-function varianceCellClass(badness) {
-  if (badness > 5) return "bg-red-900/60 text-red-300 font-semibold";
-  if (badness > 2) return "bg-yellow-900/50 text-yellow-300 font-semibold";
-  return "bg-green-900/40 text-green-300";
-}
+function fmt$(n){const a=Math.abs(n),s=n<0?"-":"+";if(a>=1e6)return s+"$"+(a/1e6).toFixed(2)+"M";if(a>=1e3)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+a.toLocaleString();}
+function fmtPct(n){return(n>=0?"+":"")+n.toFixed(1)+"%";}
+function fmtBig(n){return"$"+Math.abs(n).toLocaleString();}
 
-function fmt$(n) {
-  const abs = Math.abs(n), sign = n < 0 ? "-" : "+";
-  if (abs >= 1000000) return sign+"$"+(abs/1000000).toFixed(2)+"M";
-  if (abs >= 1000) return sign+"$"+(abs/1000).toFixed(1)+"K";
-  return sign+"$"+abs.toLocaleString();
-}
-function fmtPct(n) { return (n>=0?"+":"")+n.toFixed(1)+"%"; }
-function fmtBig(n) { return "$"+Math.abs(n).toLocaleString(); }
-
-// ── Smart CSV Parser ────────────────────────────────────────
-// Handles: any column order, missing headers, merged dept cells,
-// messy number formats ($1.2M, 1,000,000), full/partial month names,
-// date strings (Jan-24, 01/2024, Q1), extra junk rows, tabs/semicolons
+// ── Smart CSV Parser ─────────────────────────────────────────
 function parseCSV(text) {
-  // Normalize line endings and split
   const rawLines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
-
-  // Tokenize a line — handles quoted fields, tabs, semicolons, commas
   function tokenize(line) {
-    const sep = line.includes("\t") ? "\t" : line.includes(";") ? ";" : ",";
-    const tokens = []; let cur = "", inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') { inQ = !inQ; continue; }
-      if (!inQ && c === sep) { tokens.push(cur.trim()); cur = ""; continue; }
-      cur += c;
-    }
-    tokens.push(cur.trim());
-    return tokens;
+    const sep=line.includes("\t")?"\t":line.includes(";")?";":","
+    const tokens=[];let cur="",inQ=false;
+    for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){inQ=!inQ;continue;}if(!inQ&&c===sep){tokens.push(cur.trim());cur="";continue;}cur+=c;}
+    tokens.push(cur.trim());return tokens;
   }
-
-  // Parse a number from messy strings: $1.2M, (500), 1,000,000, 1.5k
-  function parseNum(s) {
-    if (!s) return NaN;
-    s = String(s).trim().replace(/[$€£¥\s]/g,"");
-    const neg = s.startsWith("(") && s.endsWith(")");
-    s = s.replace(/[()]/g,"");
-    let mul = 1;
-    if (/[Mm]$/.test(s)) { mul = 1000000; s = s.replace(/[Mm]$/,""); }
-    else if (/[Kk]$/.test(s)) { mul = 1000; s = s.replace(/[Kk]$/,""); }
-    s = s.replace(/,/g,"");
-    const n = parseFloat(s) * mul;
-    return isNaN(n) ? NaN : (neg ? -n : n);
+  function parseNum(s){
+    if(!s)return NaN;s=String(s).trim().replace(/[$€£¥\s]/g,"");
+    const neg=s.startsWith("(")&&s.endsWith(")");s=s.replace(/[()]/g,"");
+    let mul=1;if(/[Mm]$/.test(s)){mul=1e6;s=s.replace(/[Mm]$/,"");}else if(/[Kk]$/.test(s)){mul=1e3;s=s.replace(/[Kk]$/,"");}
+    s=s.replace(/,/g,"");const n=parseFloat(s)*mul;return isNaN(n)?NaN:(neg?-n:n);
   }
-
-  // Normalize month — accepts Jan, January, 1, 01, Jan-24, 01/2024, Q1 etc.
-  const MONTH_NAMES = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-  const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const Q_MAP = { q1:"Mar", q2:"Jun", q3:"Sep", q4:"Dec" };
-  function normalizeMonth(s) {
-    if (!s) return null;
-    s = String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,"");
-    // Quarter
-    if (/^q[1-4]$/.test(s)) return Q_MAP[s];
-    // Full or partial month name
-    for (let i = 0; i < MONTH_NAMES.length; i++) {
-      if (s.startsWith(MONTH_NAMES[i])) return MONTH_LABELS[i];
-    }
-    // Numeric month 1-12
-    const n = parseInt(s);
-    if (!isNaN(n) && n >= 1 && n <= 12) return MONTH_LABELS[n-1];
-    return null;
+  const MN=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  const ML=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const QM={q1:"Mar",q2:"Jun",q3:"Sep",q4:"Dec"};
+  function normalizeMonth(s){
+    if(!s)return null;s=String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+    if(/^q[1-4]$/.test(s))return QM[s];
+    for(let i=0;i<MN.length;i++)if(s.startsWith(MN[i]))return ML[i];
+    const n=parseInt(s);if(!isNaN(n)&&n>=1&&n<=12)return ML[n-1];return null;
   }
-
-  // Score how likely a cell value is a column type
-  function scoreCols(headers) {
-    const h = headers.map(h => String(h).toLowerCase().replace(/[^a-z]/g,""));
-    function best(keywords) {
-      let bestIdx = -1, bestScore = -1;
-      h.forEach((hh, i) => {
-        const score = keywords.reduce((s, kw) => s + (hh.includes(kw) ? kw.length : 0), 0);
-        if (score > bestScore) { bestScore = score; bestIdx = i; }
-      });
-      return bestScore > 0 ? bestIdx : -1;
-    }
-    return {
-      dept:   best(["department","dept","team","division","group","cost","center","bu","business"]),
-      month:  best(["month","period","mo","date","time","week","quarter"]),
-      budget: best(["budget","plan","target","forecast","bud","planned"]),
-      actual: best(["actual","actuals","real","result","spent","act","ytd","amount"]),
-    };
+  function scoreCols(headers){
+    const h=headers.map(h=>String(h).toLowerCase().replace(/[^a-z]/g,""));
+    function best(kws){let bi=-1,bs=-1;h.forEach((hh,i)=>{const sc=kws.reduce((s,k)=>s+(hh.includes(k)?k.length:0),0);if(sc>bs){bs=sc;bi=i;}});return bs>0?bi:-1;}
+    return{dept:best(["department","dept","team","division","group","cost","center","bu"]),month:best(["month","period","mo","date","time","quarter"]),budget:best(["budget","plan","target","forecast","bud","planned"]),actual:best(["actual","actuals","real","result","spent","act","ytd","amount"])};
   }
-
-  // Find the best header row (the one whose columns score highest)
-  let headerIdx = -1, colMap = { dept:-1, month:-1, budget:-1, actual:-1 };
-  for (let i = 0; i < Math.min(rawLines.length, 20); i++) {
-    const tokens = tokenize(rawLines[i]);
-    if (tokens.length < 2) continue;
-    const scores = scoreCols(tokens);
-    const found = Object.values(scores).filter(v => v >= 0).length;
-    if (found >= 3 && found > Object.values(colMap).filter(v=>v>=0).length) {
-      headerIdx = i; colMap = scores;
-    }
+  let headerIdx=-1,colMap={dept:-1,month:-1,budget:-1,actual:-1};
+  for(let i=0;i<Math.min(rawLines.length,20);i++){
+    const tokens=tokenize(rawLines[i]);if(tokens.length<2)continue;
+    const scores=scoreCols(tokens);const found=Object.values(scores).filter(v=>v>=0).length;
+    if(found>=3&&found>Object.values(colMap).filter(v=>v>=0).length){headerIdx=i;colMap=scores;}
   }
-
-  // If no header found, try to infer from first data row positions
-  const dataStart = headerIdx >= 0 ? headerIdx + 1 : 0;
-
-  // If columns still not identified, do positional fallback (dept, month, budget, actual)
-  if (colMap.dept < 0 || colMap.budget < 0 || colMap.actual < 0) {
-    colMap = { dept: 0, month: 1, budget: 2, actual: 3 };
+  const dataStart=headerIdx>=0?headerIdx+1:0;
+  if(colMap.dept<0||colMap.budget<0||colMap.actual<0)colMap={dept:0,month:1,budget:2,actual:3};
+  const rows=[];let lastDept="";
+  for(let i=dataStart;i<rawLines.length;i++){
+    const line=rawLines[i].trim();if(!line)continue;
+    const cols=tokenize(line);if(cols.length<2)continue;
+    if(/^\s*(total|subtotal|grand|sum|average|note|source|#)/i.test(line))continue;
+    const rawDept=colMap.dept>=0?cols[colMap.dept]:"";
+    const rawMonth=colMap.month>=0?cols[colMap.month]:"";
+    const dept=rawDept.trim()||lastDept;if(dept)lastDept=dept;
+    const month=normalizeMonth(rawMonth);
+    const budget=parseNum(colMap.budget>=0?cols[colMap.budget]:"");
+    const actual=parseNum(colMap.actual>=0?cols[colMap.actual]:"");
+    if(isNaN(budget)||isNaN(actual))continue;if(!dept&&!month)continue;
+    rows.push({department:dept||"Unknown",month:month||rawMonth||"?",budget,actual});
   }
-
-  const rows = [];
-  let lastDept = "";
-
-  for (let i = dataStart; i < rawLines.length; i++) {
-    const line = rawLines[i].trim();
-    if (!line) continue;
-    const cols = tokenize(line);
-    if (cols.length < 2) continue;
-
-    // Skip obvious junk rows (totals, subtotals, notes)
-    const lineL = line.toLowerCase();
-    if (/^\s*(total|subtotal|grand|sum|average|note|source|#)/i.test(lineL)) continue;
-
-    const rawDept   = colMap.dept   >= 0 ? cols[colMap.dept]   : "";
-    const rawMonth  = colMap.month  >= 0 ? cols[colMap.month]  : "";
-    const rawBudget = colMap.budget >= 0 ? cols[colMap.budget] : "";
-    const rawActual = colMap.actual >= 0 ? cols[colMap.actual] : "";
-
-    // Support merged dept cells (blank dept = same as last row)
-    const dept = rawDept.trim() || lastDept;
-    if (dept) lastDept = dept;
-
-    const month = normalizeMonth(rawMonth);
-    const budget = parseNum(rawBudget);
-    const actual = parseNum(rawActual);
-
-    // Must have valid numbers and either a dept or a month
-    if (isNaN(budget) || isNaN(actual)) continue;
-    if (!dept && !month) continue;
-
-    rows.push({
-      department: dept || "Unknown",
-      month: month || rawMonth || "?",
-      budget,
-      actual,
-    });
-  }
-
   return rows;
 }
 
 function buildPrompt(enriched) {
-  const header = "Department         | Month | Budget      | Actual      | $ Variance  | % Variance";
-  const div = "-".repeat(80);
-  const lines = enriched.map(r =>
-    `${r.department.padEnd(18)} | ${r.month} | ${fmtBig(r.budget).padStart(10)} | ${fmtBig(r.actual).padStart(10)} | ${fmt$(r.dollar).padStart(10)} | ${fmtPct(r.pct).padStart(8)}`
-  );
-  return `${header}\n${div}\n${lines.join("\n")}`;
+  const h="Department         | Month | Budget      | Actual      | $ Variance  | % Variance";
+  const d="-".repeat(80);
+  const lines=enriched.map(r=>`${r.department.padEnd(18)} | ${r.month.padEnd(5)} | ${fmtBig(r.budget).padStart(10)} | ${fmtBig(r.actual).padStart(10)} | ${fmt$(r.dollar).padStart(10)} | ${fmtPct(r.pct).padStart(8)}`);
+  return`${h}\n${d}\n${lines.join("\n")}`;
 }
 
 const SYSTEM_PROMPT = `You are a senior FP&A analyst at a SaaS company using Snowflake Cortex. You write like a CFO expects — direct, specific, no filler. Always cite exact dollar amounts and percentages. Return ONLY a valid JSON object with exactly these fields:
-
 {
-  "summary": {
-    "total_budget": number,
-    "total_actual": number,
-    "net_variance_dollar": number,
-    "net_variance_pct": number,
-    "worst_department": string,
-    "best_department": string,
-    "overall_health": "on-track" | "at-risk" | "critical"
-  },
-  "anomalies": [
-    {
-      "title": "short title",
-      "detail": "2-3 sentences with exact numbers explaining what happened and why it matters",
-      "severity": "high" | "medium" | "low",
-      "department": string,
-      "month": string
-    }
-  ],
-  "root_causes": [
-    {
-      "department": string,
-      "month": string,
-      "variance_dollar": number,
-      "variance_pct": number,
-      "hypothesis": "specific hypothesis with context",
-      "contributing_factors": ["factor 1", "factor 2"],
-      "confidence": "high" | "medium" | "low"
-    }
-  ],
-  "department_insights": [
-    {
-      "department": string,
-      "trend": "improving" | "deteriorating" | "stable" | "volatile",
-      "insight": "2-3 sentences on this department's pattern across months",
-      "action": "specific recommended action"
-    }
-  ],
-  "risk_flags": [
-    {
-      "flag": "risk description with specific numbers",
-      "impact": "what this means for the business",
-      "urgency": "immediate" | "watch" | "monitor"
-    }
-  ],
-  "recommendations": [
-    {
-      "priority": 1,
-      "action": "specific action to take",
-      "owner": "which department or role owns this",
-      "expected_impact": "what fixing this achieves"
-    }
-  ],
-  "cfo_narrative": "Four to five sentence paragraph for a CFO or board. Past tense. Cite specific dollar amounts and percentages. Name the worst and best performing departments. End with one forward-looking sentence about the biggest risk to address."
+  "summary": { "total_budget": number, "total_actual": number, "net_variance_dollar": number, "net_variance_pct": number, "worst_department": string, "best_department": string, "overall_health": "on-track"|"at-risk"|"critical" },
+  "anomalies": [{ "title": string, "detail": "2-3 sentences with exact numbers", "severity": "high"|"medium"|"low", "department": string, "month": string }],
+  "root_causes": [{ "department": string, "month": string, "variance_dollar": number, "variance_pct": number, "hypothesis": string, "contributing_factors": [string], "confidence": "high"|"medium"|"low" }],
+  "department_insights": [{ "department": string, "trend": "improving"|"deteriorating"|"stable"|"volatile", "insight": "2-3 sentences on pattern across months", "action": string }],
+  "risk_flags": [{ "flag": string, "impact": string, "urgency": "immediate"|"watch"|"monitor" }],
+  "recommendations": [{ "priority": number, "action": string, "owner": string, "expected_impact": string }],
+  "cfo_narrative": "Four to five sentence paragraph for a CFO or board. Past tense. Cite specific numbers. Name worst and best departments. End with biggest risk to address."
 }
-
 Return only valid JSON. No markdown fences. No commentary outside the JSON.`;
 
-// ── Components ──────────────────────────────────────────────
+// ── Components ───────────────────────────────────────────────
 
 function Header() {
   return (
-    <header className="w-full px-8 py-4 flex items-center justify-between border-b border-slate-700/60" style={{background:"#0d1520"}}>
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">❄️</span>
-        <div>
-          <div className="text-xl font-bold tracking-tight text-white">Cortex FP&amp;A</div>
-          <div className="text-xs font-medium" style={{color:SNOWFLAKE_BLUE}}>Variance Intelligence — Powered by Snowflake Cortex</div>
+    <header className="hero-strip border-b" style={{borderColor:"rgba(41,181,232,0.12)"}}>
+      <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl glow-blue-sm" style={{background:"linear-gradient(135deg,#0d2137,#1a3a5c)",border:"1px solid rgba(41,181,232,0.3)"}}>❄️</div>
+          <div>
+            <div className="text-2xl font-bold tracking-tight brand-text leading-none">Cortex FP&amp;A</div>
+            <div className="text-xs font-medium mt-0.5" style={{color:"rgba(41,181,232,0.75)"}}>Variance Intelligence — Powered by Snowflake Cortex</div>
+          </div>
+        </div>
+        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full" style={{background:"rgba(41,181,232,0.08)",border:"1px solid rgba(41,181,232,0.15)"}}>
+          <div className="w-1.5 h-1.5 rounded-full bg-green-400" style={{boxShadow:"0 0 6px #4ade80"}}></div>
+          <span className="text-xs font-medium" style={{color:"#94a3b8"}}>Live Analysis</span>
         </div>
       </div>
-      <div className="text-xs text-slate-500 hidden sm:block">FY Budget vs. Actual Analysis</div>
     </header>
   );
 }
 
-function DataInput({ usingDemo, onUseDemo, onCSVUpload }) {
-  const fileRef = React.useRef();
+function StatCard({label, value, sub, color}) {
+  return (
+    <div className="glass glass-hover rounded-xl p-4 fade-up">
+      <div className="text-xs font-medium mb-2" style={{color:"#64748b"}}>{label}</div>
+      <div className="text-2xl font-bold leading-none mb-1" style={{color:color||"#e2e8f0"}}>{value}</div>
+      {sub && <div className="text-xs" style={{color:"#475569"}}>{sub}</div>}
+    </div>
+  );
+}
+
+function DataInput({usingDemo, onUseDemo, onCSVUpload}) {
+  const ref = React.useRef();
   function handleFile(e) {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const rows = parseCSV(ev.target.result);
-      if (rows.length === 0) { alert("Could not parse CSV. Ensure columns: Department, Month, Budget, Actual"); return; }
-      onCSVUpload(rows);
-    };
-    reader.readAsText(file); e.target.value = "";
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{const rows=parseCSV(ev.target.result);if(!rows.length){alert("Could not parse CSV.");return;}onCSVUpload(rows);};
+    reader.readAsText(file);e.target.value="";
   }
   return (
-    <div className="flex items-center gap-3">
-      <button onClick={onUseDemo} className="px-4 py-2 rounded text-sm font-medium transition-all"
-        style={usingDemo ? {background:SNOWFLAKE_BLUE,color:"#0d1117"} : {background:"#1c2a3a",color:"#94a3b8",border:"1px solid #334155"}}>
-        📊 Use Demo Data
+    <div className="flex flex-wrap items-center gap-2">
+      <button onClick={onUseDemo} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${usingDemo?"btn-primary":"glass glass-hover"}`} style={usingDemo?{}:{color:"#94a3b8"}}>
+        📊 Demo Data
       </button>
-      <button onClick={()=>fileRef.current.click()} className="px-4 py-2 rounded text-sm font-medium transition-all"
-        style={!usingDemo ? {background:SNOWFLAKE_BLUE,color:"#0d1117"} : {background:"#1c2a3a",color:"#94a3b8",border:"1px solid #334155"}}>
+      <button onClick={()=>ref.current.click()} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${!usingDemo?"btn-primary":"glass glass-hover"}`} style={!usingDemo?{}:{color:"#94a3b8"}}>
         📁 Upload CSV
       </button>
-      <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile}/>
-      <span className="text-xs text-slate-500">CSV: Department, Month, Budget, Actual</span>
+      <input ref={ref} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile}/>
+      <span className="text-xs" style={{color:"#334155"}}>Any format · any column order · messy data ok</span>
     </div>
   );
 }
 
 function SortIcon({col,sortCol,sortDir}) {
-  if (sortCol !== col) return <span className="ml-1 text-slate-600">⇅</span>;
-  return <span className="ml-1" style={{color:SNOWFLAKE_BLUE}}>{sortDir==="asc"?"↑":"↓"}</span>;
+  if(sortCol!==col)return<span className="ml-1 opacity-30 text-xs">⇅</span>;
+  return<span className="ml-1 text-xs" style={{color:SB}}>{sortDir==="asc"?"↑":"↓"}</span>;
 }
 
-function VarianceTable({ data, analysisRows }) {
-  const [sortCol, setSortCol] = React.useState("badness");
-  const [sortDir, setSortDir] = React.useState("desc");
-  const enriched = React.useMemo(()=>enrichData(data),[data]);
-  const trendFlags = React.useMemo(()=>getTrendFlags(enriched),[enriched]);
+function VarianceTable({data, analysisRows}) {
+  const [sortCol,setSortCol]=React.useState("badness");
+  const [sortDir,setSortDir]=React.useState("desc");
+  const enriched=React.useMemo(()=>enrichData(data),[data]);
+  const trendFlags=React.useMemo(()=>getTrendFlags(enriched),[enriched]);
+  function handleSort(col){if(sortCol===col)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortCol(col);setSortDir("desc");}}
+  const sorted=React.useMemo(()=>[...enriched].sort((a,b)=>{let av=a[sortCol],bv=b[sortCol];if(typeof av==="string"){av=av.toLowerCase();bv=bv.toLowerCase();}return sortDir==="asc"?(av<bv?-1:av>bv?1:0):(av>bv?-1:av<bv?1:0);}), [enriched,sortCol,sortDir]);
 
-  function handleSort(col) {
-    if (sortCol===col) setSortDir(d=>d==="asc"?"desc":"asc");
-    else { setSortCol(col); setSortDir("desc"); }
-  }
-
-  const sorted = React.useMemo(()=>[...enriched].sort((a,b)=>{
-    let av=a[sortCol],bv=b[sortCol];
-    if (typeof av==="string") { av=av.toLowerCase(); bv=bv.toLowerCase(); }
-    if (av<bv) return sortDir==="asc"?-1:1;
-    if (av>bv) return sortDir==="asc"?1:-1;
-    return 0;
-  }),[enriched,sortCol,sortDir]);
-
-  const COLS = [
+  const COLS=[
     {key:"department",label:"Department"},
     {key:"month",label:"Month"},
     {key:"budget",label:"Budget",align:"right"},
     {key:"actual",label:"Actual",align:"right"},
     {key:"dollar",label:"$ Variance",align:"right"},
     {key:"pct",label:"% Variance",align:"right"},
-    {key:"trend",label:"Trend",align:"center",noSort:true},
+    {key:"trend",label:"",align:"center",noSort:true},
   ];
 
+  function badgeCls(badness){
+    if(badness>5)return{bg:"rgba(239,68,68,0.15)",color:"#f87171",border:"rgba(239,68,68,0.3)"};
+    if(badness>2)return{bg:"rgba(234,179,8,0.12)",color:"#facc15",border:"rgba(234,179,8,0.25)"};
+    return{bg:"rgba(74,222,128,0.1)",color:"#4ade80",border:"rgba(74,222,128,0.2)"};
+  }
+
   return (
-    <div className="table-container rounded-lg border border-slate-700/50" style={{background:"#111827"}}>
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr style={{background:"#0d1520",borderBottom:"1px solid #1e3a5f"}}>
-            {COLS.map(c=>(
-              <th key={c.key}
-                className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider ${c.align==="right"?"text-right":c.align==="center"?"text-center":"text-left"}`}
-                style={{color:"#64748b"}} onClick={()=>!c.noSort&&handleSort(c.key)}>
-                {c.label}{!c.noSort&&<SortIcon col={c.key} sortCol={sortCol} sortDir={sortDir}/>}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((row,i)=>{
-            const key=`${row.department}|${row.month}`;
-            const isTrend=trendFlags.has(key), isAI=analysisRows.has(key);
-            return (
-              <tr key={i} className={`border-b border-slate-800/60 transition-colors ${isAI?"flagged-row":""}`}
-                style={{background:isAI?"rgba(41,181,232,0.06)":i%2===0?"#111827":"#0f1923",outline:isAI?"1px solid rgba(41,181,232,0.25)":"none"}}>
-                <td className="px-4 py-2.5 text-slate-200 font-medium">{row.department}</td>
-                <td className="px-4 py-2.5 text-slate-400">{row.month}</td>
-                <td className="px-4 py-2.5 text-right text-slate-300">{fmtBig(row.budget)}</td>
-                <td className="px-4 py-2.5 text-right text-slate-300">{fmtBig(row.actual)}</td>
-                <td className={`px-4 py-2.5 text-right ${row.dollar<0?"text-red-400":"text-green-400"}`}>{fmt$(row.dollar)}</td>
-                <td className="px-4 py-2.5 text-right">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs ${varianceCellClass(row.badness)}`}>{fmtPct(row.pct)}</span>
-                </td>
-                <td className="px-4 py-2.5 text-center text-base">{isTrend?"🔴":""}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="rounded-2xl overflow-hidden glass" style={{border:"1px solid rgba(41,181,232,0.12)"}}>
+      <div className="overflow-x-auto">
+        <table className="w-full data-table" style={{borderCollapse:"collapse",fontSize:"13px"}}>
+          <thead>
+            <tr style={{background:"rgba(7,13,22,0.9)",borderBottom:"1px solid rgba(41,181,232,0.12)"}}>
+              {COLS.map(c=>(
+                <th key={c.key} onClick={()=>!c.noSort&&handleSort(c.key)}
+                  className={`px-5 py-3.5 font-semibold ${c.align==="right"?"text-right":c.align==="center"?"text-center":"text-left"}`}
+                  style={{color:"#475569",fontSize:"11px",letterSpacing:".07em",textTransform:"uppercase"}}>
+                  {c.label}{!c.noSort&&<SortIcon col={c.key} sortCol={sortCol} sortDir={sortDir}/>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((row,i)=>{
+              const key=`${row.department}|${row.month}`;
+              const isAI=analysisRows.has(key);
+              const isTrend=trendFlags.has(key);
+              const bc=badgeCls(row.badness);
+              return(
+                <tr key={i} className={isAI?"flagged-row":""} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:isAI?"rgba(41,181,232,0.05)":i%2===0?"transparent":"rgba(255,255,255,0.015)"}}>
+                  <td className="px-5 py-3 font-semibold" style={{color:"#cbd5e1"}}>{row.department}</td>
+                  <td className="px-5 py-3" style={{color:"#64748b"}}>{row.month}</td>
+                  <td className="px-5 py-3 text-right" style={{color:"#94a3b8"}}>{fmtBig(row.budget)}</td>
+                  <td className="px-5 py-3 text-right" style={{color:"#cbd5e1",fontWeight:500}}>{fmtBig(row.actual)}</td>
+                  <td className={`px-5 py-3 text-right font-semibold`} style={{color:row.dollar<0?"#f87171":"#4ade80"}}>{fmt$(row.dollar)}</td>
+                  <td className="px-5 py-3 text-right">
+                    <span className="pill" style={{background:bc.bg,color:bc.color,border:`1px solid ${bc.border}`}}>{fmtPct(row.pct)}</span>
+                  </td>
+                  <td className="px-5 py-3 text-center text-sm">{isTrend?"🔴":""}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-function Card({title,icon,children,accent}) {
+function SectionCard({title, icon, children, accent, className=""}) {
   return (
-    <div className="rounded-lg p-4 border" style={{background:"#111827",borderColor:accent||"#1e3a5f"}}>
-      <div className="flex items-center gap-2 mb-3">
+    <div className={`glass glass-hover rounded-2xl p-5 ${className}`} style={{border:`1px solid ${accent||"rgba(41,181,232,0.12)"}`}}>
+      <div className="flex items-center gap-2.5 mb-4">
         <span className="text-base">{icon}</span>
-        <span className="text-sm font-semibold text-slate-200 uppercase tracking-wide">{title}</span>
+        <span className="text-xs font-bold uppercase tracking-widest" style={{color:SB}}>{title}</span>
       </div>
       {children}
     </div>
   );
 }
 
-function AnalysisPanel({ data, onAnalysisDone, analysisResult, setAnalysisResult }) {
-  const [status, setStatus] = React.useState("idle");
-  const [errorMsg, setErrorMsg] = React.useState("");
-  const [copied, setCopied] = React.useState(false);
+function SeverityBadge({s}) {
+  const map={high:{bg:"rgba(239,68,68,0.12)",color:"#f87171",border:"rgba(239,68,68,0.25)"},medium:{bg:"rgba(234,179,8,0.1)",color:"#facc15",border:"rgba(234,179,8,0.2)"},low:{bg:"rgba(100,116,139,0.12)",color:"#94a3b8",border:"rgba(100,116,139,0.2)"}};
+  const c=map[s]||map.low;
+  return<span className="pill" style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`}}>{s}</span>;
+}
+
+function UrgencyBadge({u}) {
+  const map={immediate:{bg:"rgba(239,68,68,0.12)",color:"#f87171",border:"rgba(239,68,68,0.25)"},watch:{bg:"rgba(234,179,8,0.1)",color:"#facc15",border:"rgba(234,179,8,0.2)"},monitor:{bg:"rgba(100,116,139,0.1)",color:"#94a3b8",border:"rgba(100,116,139,0.2)"}};
+  const c=map[u]||map.monitor;
+  return<span className="pill" style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`}}>{u}</span>;
+}
+
+function ConfidenceDot({c}) {
+  const col=c==="high"?"#4ade80":c==="medium"?"#facc15":"#94a3b8";
+  return<span className="flex items-center gap-1 text-xs" style={{color:col}}><span style={{width:6,height:6,borderRadius:"50%",background:col,display:"inline-block",boxShadow:`0 0 5px ${col}`}}></span>{c}</span>;
+}
+
+function TrendChip({t}) {
+  const map={improving:{color:"#4ade80",icon:"↗"},deteriorating:{color:"#f87171",icon:"↘"},volatile:{color:"#facc15",icon:"↕"},stable:{color:"#94a3b8",icon:"→"}};
+  const c=map[t]||map.stable;
+  return<span className="text-xs font-semibold" style={{color:c.color}}>{c.icon} {t}</span>;
+}
+
+function AnalysisPanel({data, onAnalysisDone, analysisResult, setAnalysisResult}) {
+  const [status,setStatus]=React.useState("idle");
+  const [errorMsg,setErrorMsg]=React.useState("");
+  const [copied,setCopied]=React.useState(false);
 
   async function runAnalysis() {
-    setStatus("loading"); setErrorMsg(""); setAnalysisResult(null);
-    const enriched = enrichData(data);
+    setStatus("loading");setErrorMsg("");setAnalysisResult(null);
+    const enriched=enrichData(data);
     try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          max_tokens: 3000,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: buildPrompt(enriched) },
-          ],
-        }),
-      });
-      if (!res.ok) { const err = await res.text(); throw new Error(`API ${res.status}: ${err}`); }
-      const json = await res.json();
-      const raw = json.choices?.[0]?.message?.content || "";
-      const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/,"").trim();
-      try {
-        const parsed = JSON.parse(text);
-        setAnalysisResult(parsed); onAnalysisDone(parsed); setStatus("done");
-      } catch {
-        setAnalysisResult({ _raw: text }); onAnalysisDone({}); setStatus("done");
-      }
-    } catch(e) { setErrorMsg(e.message); setStatus("error"); }
+      const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4o",max_tokens:3000,messages:[{role:"system",content:SYSTEM_PROMPT},{role:"user",content:buildPrompt(enriched)}]})});
+      if(!res.ok){const e=await res.text();throw new Error(`API ${res.status}: ${e}`);}
+      const json=await res.json();
+      const raw=json.choices?.[0]?.message?.content||"";
+      const text=raw.replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"").trim();
+      try{const parsed=JSON.parse(text);setAnalysisResult(parsed);onAnalysisDone(parsed);setStatus("done");}
+      catch{setAnalysisResult({_raw:text});onAnalysisDone({});setStatus("done");}
+    } catch(e){setErrorMsg(e.message);setStatus("error");}
   }
 
-  function copyNarrative() {
-    navigator.clipboard.writeText(analysisResult?.cfo_narrative||"").then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
-  }
+  function copyNarrative(){navigator.clipboard.writeText(analysisResult?.cfo_narrative||"").then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});}
+
+  const r=analysisResult||{};
 
   return (
-    <div className="rounded-xl border border-slate-700/50 p-6" style={{background:"#0d1520"}}>
-      <div className="flex items-center justify-between mb-5">
+    <div className="glass rounded-2xl p-6" style={{border:"1px solid rgba(41,181,232,0.15)"}}>
+      {/* Panel header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-base font-semibold text-white">❄️ Cortex AI Analysis</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Powered by Snowflake Cortex + Claude AI</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">❄️</span>
+            <h2 className="text-base font-bold text-white">Cortex AI Analysis</h2>
+          </div>
+          <p className="text-xs" style={{color:"#475569"}}>GPT-4o · Snowflake Cortex inference layer</p>
         </div>
-        {status !== "loading" && (
-          <button onClick={runAnalysis} className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
-            style={{background:SNOWFLAKE_BLUE,color:"#0d1117"}}>
+        {status!=="loading" && (
+          <button onClick={runAnalysis} className="btn-primary px-5 py-2.5 rounded-xl text-sm font-bold">
             {status==="done"?"↺ Re-run Analysis":"▶ Run Cortex Analysis"}
           </button>
         )}
       </div>
 
+      {/* Idle */}
       {status==="idle" && (
-        <div className="text-center py-8 text-slate-600 text-sm border border-dashed border-slate-700/40 rounded-lg">
-          Click "Run Cortex Analysis" to generate AI-powered variance insights
+        <div className="rounded-xl py-12 text-center" style={{border:"1px dashed rgba(41,181,232,0.12)"}}>
+          <div className="text-3xl mb-3">❄️</div>
+          <div className="text-sm font-medium text-slate-400">Click <strong style={{color:SB}}>Run Cortex Analysis</strong> to generate deep AI insights</div>
+          <div className="text-xs mt-1" style={{color:"#334155"}}>Anomalies · Root causes · Dept trends · CFO narrative</div>
         </div>
       )}
 
+      {/* Loading */}
       {status==="loading" && (
-        <div className="text-center py-10">
-          <div className="text-2xl mb-3 animate-spin inline-block">❄️</div>
-          <div className="text-sm font-medium" style={{color:SNOWFLAKE_BLUE}}>Cortex is analyzing your variance data…</div>
-          <div className="text-xs text-slate-600 mt-2">Querying Snowflake Cortex inference layer</div>
+        <div className="rounded-xl py-14 text-center" style={{border:"1px dashed rgba(41,181,232,0.12)"}}>
+          <div className="spin text-3xl mb-4">❄️</div>
+          <div className="text-sm font-semibold mb-1" style={{color:SB}}>Cortex is analyzing your variance data…</div>
+          <div className="text-xs" style={{color:"#334155"}}>Running inference on Snowflake Cortex</div>
         </div>
       )}
 
+      {/* Error */}
       {status==="error" && (
-        <div className="rounded-lg p-4 border border-red-800/50 bg-red-950/30">
-          <div className="text-sm font-semibold text-red-400 mb-1">⚠ Analysis Failed</div>
-          <div className="text-xs text-red-300/70 mb-3 break-all">{errorMsg}</div>
-          <button onClick={runAnalysis} className="px-4 py-1.5 rounded text-xs font-semibold"
-            style={{background:"#7f1d1d",color:"#fca5a5",border:"1px solid #991b1b"}}>Retry</button>
+        <div className="rounded-xl p-5" style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)"}}>
+          <div className="text-sm font-bold text-red-400 mb-1">⚠ Analysis failed</div>
+          <div className="text-xs text-red-300/60 mb-4 break-all font-mono">{errorMsg}</div>
+          <button onClick={runAnalysis} className="px-4 py-2 rounded-lg text-xs font-bold" style={{background:"rgba(239,68,68,0.12)",color:"#f87171",border:"1px solid rgba(239,68,68,0.25)"}}>Retry</button>
         </div>
       )}
 
+      {/* Results */}
       {status==="done" && analysisResult && (
-        <>
-          {analysisResult._raw ? (
-            <div className="rounded-lg p-4 border border-slate-700/50 bg-slate-900">
-              <div className="text-xs text-yellow-400 mb-2">⚠ Response was not valid JSON — showing raw output</div>
-              <pre className="text-xs text-slate-300 whitespace-pre-wrap">{analysisResult._raw}</pre>
+        <div className="space-y-4 fade-up">
+          {r._raw ? (
+            <div className="rounded-xl p-4" style={{background:"rgba(234,179,8,0.06)",border:"1px solid rgba(234,179,8,0.2)"}}>
+              <div className="text-xs text-yellow-400 mb-2 font-semibold">⚠ Raw response — JSON parse failed</div>
+              <pre className="text-xs text-slate-300 whitespace-pre-wrap overflow-auto max-h-64">{r._raw}</pre>
             </div>
-          ) : (
-            <div className="space-y-4">
+          ) : (<>
 
-              {/* Health Summary Bar */}
-              {analysisResult.summary && (() => {
-                const s = analysisResult.summary;
-                const healthColor = s.overall_health==="on-track" ? "#4ade80" : s.overall_health==="at-risk" ? "#facc15" : "#f87171";
-                const healthBg = s.overall_health==="on-track" ? "#14532d" : s.overall_health==="at-risk" ? "#713f12" : "#7f1d1d";
-                return (
-                  <div className="rounded-lg p-4 border border-slate-700/40 flex flex-wrap gap-6 items-center" style={{background:"#111827"}}>
-                    <div>
-                      <div className="text-xs text-slate-500 mb-1">Overall Health</div>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide" style={{background:healthBg,color:healthColor}}>
-                        {s.overall_health}
-                      </span>
-                    </div>
-                    <div><div className="text-xs text-slate-500 mb-1">Net Variance</div>
-                      <div className="text-sm font-bold" style={{color: s.net_variance_dollar>=0?"#4ade80":"#f87171"}}>
-                        {s.net_variance_dollar>=0?"+":""}{s.net_variance_dollar?.toLocaleString ? "$"+Math.abs(s.net_variance_dollar).toLocaleString() : s.net_variance_dollar} ({s.net_variance_pct>=0?"+":""}{typeof s.net_variance_pct==="number"?s.net_variance_pct.toFixed(1):s.net_variance_pct}%)
-                      </div>
-                    </div>
-                    <div><div className="text-xs text-slate-500 mb-1">Worst Dept</div><div className="text-sm font-semibold text-red-400">{s.worst_department}</div></div>
-                    <div><div className="text-xs text-slate-500 mb-1">Best Dept</div><div className="text-sm font-semibold text-green-400">{s.best_department}</div></div>
+            {/* Health bar */}
+            {r.summary && (() => {
+              const s=r.summary;
+              const hc=s.overall_health==="on-track"?"#4ade80":s.overall_health==="at-risk"?"#facc15":"#f87171";
+              const hb=s.overall_health==="on-track"?"rgba(74,222,128,0.08)":s.overall_health==="at-risk"?"rgba(234,179,8,0.08)":"rgba(239,68,68,0.08)";
+              const hborder=s.overall_health==="on-track"?"rgba(74,222,128,0.2)":s.overall_health==="at-risk"?"rgba(234,179,8,0.2)":"rgba(239,68,68,0.2)";
+              return(
+                <div className="rounded-xl p-4 flex flex-wrap gap-6 items-center" style={{background:hb,border:`1px solid ${hborder}`}}>
+                  <div>
+                    <div className="text-xs mb-1.5" style={{color:"#64748b"}}>Overall Health</div>
+                    <span className="pill text-sm font-bold px-3 py-1" style={{background:"rgba(0,0,0,0.3)",color:hc,border:`1px solid ${hc}44`}}>{s.overall_health?.toUpperCase()}</span>
                   </div>
-                );
-              })()}
-
-              {/* Anomalies */}
-              <Card title="Anomalies Detected" icon="🔍" accent="#1e3a5f">
-                <div className="space-y-3">
-                  {(analysisResult.anomalies||[]).map((a,i)=>{
-                    const sevColor = a.severity==="high" ? "#f87171" : a.severity==="medium" ? "#facc15" : "#94a3b8";
-                    const sevBg    = a.severity==="high" ? "#7f1d1d" : a.severity==="medium" ? "#713f12" : "#1e293b";
-                    return (
-                      <div key={i} className="rounded-lg p-3" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-xs font-bold text-slate-100">{a.title||a}</span>
-                          {a.severity && <span className="px-1.5 py-0.5 rounded text-xs font-semibold uppercase" style={{background:sevBg,color:sevColor}}>{a.severity}</span>}
-                          {a.department && <span className="text-xs text-slate-500">{a.department} · {a.month}</span>}
-                        </div>
-                        {a.detail && <p className="text-xs text-slate-400 leading-relaxed">{a.detail}</p>}
-                      </div>
-                    );
-                  })}
+                  {[
+                    {label:"Net Variance",value:`${s.net_variance_dollar>=0?"+":"-"}$${Math.abs(s.net_variance_dollar||0).toLocaleString()}`,sub:`${s.net_variance_pct>=0?"+":""}${(s.net_variance_pct||0).toFixed(1)}%`,color:s.net_variance_dollar>=0?"#4ade80":"#f87171"},
+                    {label:"Worst Dept",value:s.worst_department,color:"#f87171"},
+                    {label:"Best Dept",value:s.best_department,color:"#4ade80"},
+                  ].map((x,i)=>(
+                    <div key={i}>
+                      <div className="text-xs mb-1" style={{color:"#64748b"}}>{x.label}</div>
+                      <div className="text-sm font-bold" style={{color:x.color}}>{x.value}<span className="text-xs font-normal ml-1" style={{color:"#475569"}}>{x.sub}</span></div>
+                    </div>
+                  ))}
                 </div>
-              </Card>
+              );
+            })()}
 
-              {/* Root Causes */}
-              <Card title="Root Cause Analysis" icon="🧠" accent="#1e3a5f">
+            {/* 2-col grid: Anomalies + Root Causes */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <SectionCard title="Anomalies Detected" icon="🔍">
                 <div className="space-y-3">
-                  {(analysisResult.root_causes||[]).map((rc,i)=>{
-                    const confColor = rc.confidence==="high"?"#4ade80":rc.confidence==="medium"?"#facc15":"#94a3b8";
-                    return (
-                      <div key={i} className="rounded-lg p-3" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="text-xs font-bold" style={{color:SNOWFLAKE_BLUE}}>{rc.department}</span>
-                          <span className="text-xs text-slate-500">·</span>
-                          <span className="text-xs text-slate-400">{rc.month}</span>
-                          {rc.variance_dollar !== undefined && (
-                            <span className={`text-xs font-semibold ${rc.variance_dollar<0?"text-red-400":"text-green-400"}`}>
-                              {rc.variance_dollar>=0?"+":""}{typeof rc.variance_dollar==="number"?"$"+Math.abs(rc.variance_dollar).toLocaleString():rc.variance_dollar}
-                              {rc.variance_pct !== undefined && ` (${rc.variance_pct>=0?"+":""}${typeof rc.variance_pct==="number"?rc.variance_pct.toFixed(1):rc.variance_pct}%)`}
-                            </span>
-                          )}
-                          {rc.confidence && <span className="ml-auto text-xs" style={{color:confColor}}>● {rc.confidence} confidence</span>}
-                        </div>
-                        <p className="text-xs text-slate-300 mb-2">{rc.hypothesis}</p>
-                        {(rc.contributing_factors||[]).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {rc.contributing_factors.map((f,j)=>(
-                              <span key={j} className="px-2 py-0.5 rounded text-xs text-slate-400" style={{background:"#1e3a5f"}}>{f}</span>
-                            ))}
-                          </div>
-                        )}
+                  {(r.anomalies||[]).map((a,i)=>(
+                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(7,13,22,0.6)",border:"1px solid rgba(255,255,255,0.05)"}}>
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="text-xs font-bold text-slate-100">{a.title||a}</span>
+                        {a.severity&&<SeverityBadge s={a.severity}/>}
                       </div>
-                    );
-                  })}
+                      {a.department&&<div className="text-xs mb-1.5" style={{color:"#475569"}}>{a.department} · {a.month}</div>}
+                      {a.detail&&<p className="text-xs leading-relaxed" style={{color:"#94a3b8"}}>{a.detail}</p>}
+                    </div>
+                  ))}
                 </div>
-              </Card>
+              </SectionCard>
 
-              {/* Department Insights */}
-              {(analysisResult.department_insights||[]).length > 0 && (
-                <Card title="Department Insights" icon="📈" accent="#1e3a5f">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(analysisResult.department_insights||[]).map((d,i)=>{
-                      const trendIcon = d.trend==="improving"?"↗":"deteriorating"?"↘":d.trend==="volatile"?"↕":"→";
-                      const trendColor = d.trend==="improving"?"#4ade80":d.trend==="deteriorating"?"#f87171":d.trend==="volatile"?"#facc15":"#94a3b8";
-                      return (
-                        <div key={i} className="rounded-lg p-3" style={{background:"#0d1520",border:"1px solid #1e3a5f"}}>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-slate-100">{d.department}</span>
-                            <span className="text-xs font-semibold" style={{color:trendColor}}>{trendIcon} {d.trend}</span>
-                          </div>
-                          <p className="text-xs text-slate-400 leading-relaxed mb-2">{d.insight}</p>
-                          {d.action && <div className="text-xs rounded p-1.5" style={{background:"#0a1a2a",color:SNOWFLAKE_BLUE}}>→ {d.action}</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-              )}
-
-              {/* Risk Flags */}
-              <Card title="Risk Flags" icon="🚩" accent="#3b1f1f">
+              <SectionCard title="Root Cause Analysis" icon="🧠">
                 <div className="space-y-3">
-                  {(analysisResult.risk_flags||[]).map((r,i)=>{
-                    const urgColor = r.urgency==="immediate"?"#f87171":r.urgency==="watch"?"#facc15":"#94a3b8";
-                    const urgBg    = r.urgency==="immediate"?"#7f1d1d":r.urgency==="watch"?"#713f12":"#1e293b";
-                    return (
-                      <div key={i} className="rounded-lg p-3" style={{background:"#1a0a0a",border:"1px solid #3b1f1f"}}>
-                        <div className="flex items-start gap-2">
-                          <span className="text-red-400 shrink-0 mt-0.5">▸</span>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-slate-200">{r.flag||r}</span>
-                              {r.urgency && <span className="px-1.5 py-0.5 rounded text-xs font-semibold uppercase shrink-0" style={{background:urgBg,color:urgColor}}>{r.urgency}</span>}
-                            </div>
-                            {r.impact && <p className="text-xs text-slate-500">{r.impact}</p>}
-                          </div>
-                        </div>
+                  {(r.root_causes||[]).map((rc,i)=>(
+                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(7,13,22,0.6)",border:"1px solid rgba(255,255,255,0.05)"}}>
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="text-xs font-bold" style={{color:SB}}>{rc.department}</span>
+                        <span style={{color:"#1e3a5f"}}>·</span>
+                        <span className="text-xs" style={{color:"#64748b"}}>{rc.month}</span>
+                        {rc.variance_dollar!==undefined&&<span className={`text-xs font-semibold ml-auto ${rc.variance_dollar<0?"text-red-400":"text-green-400"}`}>{rc.variance_dollar>=0?"+":"-"}${Math.abs(rc.variance_dollar||0).toLocaleString()}</span>}
+                        {rc.confidence&&<ConfidenceDot c={rc.confidence}/>}
                       </div>
-                    );
-                  })}
-                </div>
-              </Card>
-
-              {/* Recommendations */}
-              {(analysisResult.recommendations||[]).length > 0 && (
-                <Card title="Recommended Actions" icon="✅" accent="#1a2e1a">
-                  <div className="space-y-3">
-                    {(analysisResult.recommendations||[]).map((rec,i)=>(
-                      <div key={i} className="rounded-lg p-3 flex gap-3" style={{background:"#0a1a0a",border:"1px solid #1a3a1a"}}>
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{background:"#14532d",color:"#4ade80"}}>
-                          {rec.priority||i+1}
+                      <p className="text-xs leading-relaxed mb-2" style={{color:"#94a3b8"}}>{rc.hypothesis}</p>
+                      {(rc.contributing_factors||[]).length>0&&(
+                        <div className="flex flex-wrap gap-1.5">
+                          {rc.contributing_factors.map((f,j)=>(
+                            <span key={j} className="px-2 py-0.5 rounded-md text-xs" style={{background:"rgba(41,181,232,0.08)",color:"#64748b",border:"1px solid rgba(41,181,232,0.12)"}}>{f}</span>
+                          ))}
                         </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* Department Insights */}
+            {(r.department_insights||[]).length>0&&(
+              <SectionCard title="Department Insights" icon="📈">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {(r.department_insights||[]).map((d,i)=>(
+                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(7,13,22,0.6)",border:"1px solid rgba(255,255,255,0.05)"}}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-100">{d.department}</span>
+                        <TrendChip t={d.trend}/>
+                      </div>
+                      <p className="text-xs leading-relaxed mb-2.5" style={{color:"#64748b"}}>{d.insight}</p>
+                      {d.action&&<div className="text-xs rounded-lg px-2.5 py-1.5 font-medium" style={{background:"rgba(41,181,232,0.07)",color:SB,border:"1px solid rgba(41,181,232,0.12)"}}>→ {d.action}</div>}
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+
+            {/* 2-col: Risk + Recommendations */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <SectionCard title="Risk Flags" icon="🚩" accent="rgba(239,68,68,0.15)">
+                <div className="space-y-3">
+                  {(r.risk_flags||[]).map((rf,i)=>(
+                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(239,68,68,0.04)",border:"1px solid rgba(239,68,68,0.1)"}}>
+                      <div className="flex items-start gap-2 mb-1.5">
+                        <span className="text-red-400 shrink-0 mt-0.5 text-xs">▸</span>
                         <div className="flex-1">
-                          <div className="text-xs font-semibold text-slate-100 mb-1">{rec.action}</div>
-                          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                            {rec.owner && <span>👤 {rec.owner}</span>}
-                            {rec.expected_impact && <span>🎯 {rec.expected_impact}</span>}
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="text-xs font-semibold text-slate-200">{rf.flag||rf}</span>
+                            {rf.urgency&&<UrgencyBadge u={rf.urgency}/>}
                           </div>
+                          {rf.impact&&<p className="text-xs leading-relaxed" style={{color:"#64748b"}}>{rf.impact}</p>}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-
-              {/* CFO Narrative */}
-              <Card title="CFO Narrative" icon="📋" accent="#1a2e1a">
-                <div className="rounded-lg p-4 mb-3 text-sm leading-relaxed text-slate-200" style={{background:"#0a1a0a",border:"1px solid #1a3a1a"}}>
-                  {analysisResult.cfo_narrative}
+                    </div>
+                  ))}
                 </div>
-                <button onClick={copyNarrative} className="w-full py-1.5 rounded text-xs font-semibold transition-all"
-                  style={{background:copied?"#14532d":"#1c3a1c",color:copied?"#86efac":"#4ade80",border:`1px solid ${copied?"#166534":"#1a3a1a"}`}}>
-                  {copied?"✓ Copied!":"Copy to Clipboard"}
-                </button>
-              </Card>
+              </SectionCard>
 
+              <SectionCard title="Recommended Actions" icon="✅" accent="rgba(74,222,128,0.12)">
+                <div className="space-y-3">
+                  {(r.recommendations||[]).map((rec,i)=>(
+                    <div key={i} className="rounded-xl p-3.5 flex gap-3" style={{background:"rgba(74,222,128,0.04)",border:"1px solid rgba(74,222,128,0.08)"}}>
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{background:"rgba(74,222,128,0.12)",color:"#4ade80",border:"1px solid rgba(74,222,128,0.2)"}}>{rec.priority||i+1}</div>
+                      <div>
+                        <div className="text-xs font-semibold text-slate-100 mb-1">{rec.action}</div>
+                        <div className="flex flex-wrap gap-3 text-xs" style={{color:"#475569"}}>
+                          {rec.owner&&<span>👤 {rec.owner}</span>}
+                          {rec.expected_impact&&<span>🎯 {rec.expected_impact}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
             </div>
-          )}
-        </>
+
+            {/* CFO Narrative */}
+            <SectionCard title="CFO Narrative" icon="📋" accent="rgba(41,181,232,0.15)">
+              <div className="rounded-xl p-5 mb-3 text-sm leading-relaxed" style={{background:"rgba(7,13,22,0.7)",border:"1px solid rgba(41,181,232,0.1)",color:"#cbd5e1",lineHeight:1.8}}>{r.cfo_narrative}</div>
+              <button onClick={copyNarrative} className="w-full py-2 rounded-xl text-xs font-bold transition-all" style={{background:copied?"rgba(74,222,128,0.12)":"rgba(41,181,232,0.08)",color:copied?"#4ade80":SB,border:`1px solid ${copied?"rgba(74,222,128,0.25)":"rgba(41,181,232,0.2)"}`}}>
+                {copied?"✓ Copied to clipboard":"Copy to Clipboard"}
+              </button>
+            </SectionCard>
+          </>)}
+        </div>
       )}
     </div>
   );
 }
 
-function StickyBar({ enrichedData, cfoNarrative }) {
-  const [copiedNarr,setCopiedNarr]=React.useState(false);
-  const [copiedCSV,setCopiedCSV]=React.useState(false);
+function StickyBar({enrichedData, cfoNarrative}) {
+  const [c1,setC1]=React.useState(false);
+  const [c2,setC2]=React.useState(false);
 
-  function copyNarrative() {
-    if (!cfoNarrative) return;
-    navigator.clipboard.writeText(cfoNarrative).then(()=>{setCopiedNarr(true);setTimeout(()=>setCopiedNarr(false),2000);});
-  }
-  function downloadCSV() {
-    const header="Department,Month,Budget,Actual,$ Variance,% Variance\n";
+  function copyNarr(){if(!cfoNarrative)return;navigator.clipboard.writeText(cfoNarrative).then(()=>{setC1(true);setTimeout(()=>setC1(false),2000);});}
+  function dlCSV(){
+    const h="Department,Month,Budget,Actual,$ Variance,% Variance\n";
     const rows=enrichedData.map(r=>`${r.department},${r.month},${r.budget},${r.actual},${r.dollar},${r.pct.toFixed(2)}%`).join("\n");
-    const blob=new Blob([header+rows],{type:"text/csv"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download=`fpa_variance_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-    setCopiedCSV(true); setTimeout(()=>setCopiedCSV(false),2000);
+    const a=Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([h+rows],{type:"text/csv"})),download:`fpa_variance_${new Date().toISOString().slice(0,10)}.csv`});
+    a.click();setC2(true);setTimeout(()=>setC2(false),2000);
   }
-  function exportSummary() {
+  function exportHTML(){
     const date=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
-    const tableRows=enrichedData.map(r=>`<tr><td>${r.department}</td><td>${r.month}</td><td>$${r.budget.toLocaleString()}</td><td>$${r.actual.toLocaleString()}</td><td style="color:${r.dollar<0?"#dc2626":"#16a34a"}">${fmt$(r.dollar)}</td><td>${fmtPct(r.pct)}</td></tr>`).join("");
-    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>FP&A Executive Summary</title>
-<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;color:#1e293b;padding:0 24px}h1{font-size:22px;font-weight:700;color:#0f172a;margin-bottom:4px}.sub{font-size:13px;color:#64748b;margin-bottom:32px}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:32px}th{background:#0d1520;color:#fff;padding:8px 12px;text-align:left;font-weight:600}td{padding:7px 12px;border-bottom:1px solid #e2e8f0}tr:nth-child(even) td{background:#f8fafc}.narrative{background:#f0fdf4;border-left:4px solid #16a34a;padding:16px 20px;border-radius:4px;font-size:14px;line-height:1.7}.footer{margin-top:48px;font-size:11px;color:#94a3b8;text-align:center}</style></head>
-<body><h1>❄️ Cortex FP&amp;A — Variance Executive Summary</h1><div class="sub">Generated ${date} · Powered by Snowflake Cortex</div>
-<table><thead><tr><th>Department</th><th>Month</th><th>Budget</th><th>Actual</th><th>$ Variance</th><th>% Variance</th></tr></thead><tbody>${tableRows}</tbody></table>
-${cfoNarrative?`<div class="narrative"><strong>CFO Narrative</strong><br/><br/>${cfoNarrative}</div>`:""}
-<div class="footer">Built with Snowflake Cortex ❄️ and Claude AI · ${AUTHOR_HANDLE}</div></body></html>`;
-    const blob=new Blob([html],{type:"text/html"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download=`fpa_executive_summary_${new Date().toISOString().slice(0,10)}.html`;
-    a.click(); URL.revokeObjectURL(url);
+    const trs=enrichedData.map(r=>`<tr><td>${r.department}</td><td>${r.month}</td><td>$${r.budget.toLocaleString()}</td><td>$${r.actual.toLocaleString()}</td><td style="color:${r.dollar<0?"#dc2626":"#16a34a"}">${fmt$(r.dollar)}</td><td>${fmtPct(r.pct)}</td></tr>`).join("");
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>FP&A Executive Summary</title><style>body{font-family:Arial,sans-serif;max-width:960px;margin:48px auto;color:#1e293b;padding:0 24px}h1{font-size:24px;font-weight:800;color:#0f172a}p.sub{font-size:13px;color:#64748b;margin:4px 0 36px}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:36px}th{background:#0d1520;color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.07em;text-transform:uppercase}td{padding:9px 14px;border-bottom:1px solid #e2e8f0}tr:nth-child(even) td{background:#f8fafc}.narr{background:#f0fdf4;border-left:4px solid #16a34a;padding:18px 22px;border-radius:6px;font-size:14px;line-height:1.75;color:#1e293b}.footer{margin-top:56px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:16px}</style></head><body><h1>❄️ Cortex FP&A — Variance Executive Summary</h1><p class="sub">Generated ${date} · Powered by Snowflake Cortex · Built by ${AUTHOR_NAME}</p><table><thead><tr><th>Department</th><th>Month</th><th>Budget</th><th>Actual</th><th>$ Variance</th><th>% Variance</th></tr></thead><tbody>${trs}</tbody></table>${cfoNarrative?`<div class="narr"><strong>CFO Narrative</strong><br/><br/>${cfoNarrative}</div>`:""}<div class="footer">Built with Snowflake Cortex ❄️ and Claude AI · <a href="${AUTHOR_LINKEDIN}">${AUTHOR_NAME}</a></div></body></html>`;
+    const a=Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([html],{type:"text/html"})),download:`fpa_executive_summary_${new Date().toISOString().slice(0,10)}.html`});
+    a.click();
   }
 
-  const btn="px-4 py-2 rounded text-xs font-semibold transition-all hover:opacity-90 active:scale-95";
-  return (
-    <div className="sticky-bar px-6 py-3 flex items-center gap-3 border-t border-slate-700/50" style={{background:"#0a0f18"}}>
-      <span className="text-xs text-slate-500 mr-2 hidden sm:block">Export:</span>
-      <button onClick={copyNarrative} disabled={!cfoNarrative} className={btn}
-        style={{background:copiedNarr?"#14532d":"#1c2a3a",color:copiedNarr?"#86efac":"#94a3b8",border:"1px solid #334155",opacity:cfoNarrative?1:0.4}}>
-        {copiedNarr?"✓ Copied!":"📋 Copy CFO Narrative"}
-      </button>
-      <button onClick={downloadCSV} className={btn}
-        style={{background:copiedCSV?"#14532d":"#1c2a3a",color:copiedCSV?"#86efac":"#94a3b8",border:"1px solid #334155"}}>
-        {copiedCSV?"✓ Downloaded!":"⬇ Download CSV"}
-      </button>
-      <button onClick={exportSummary} className={btn}
-        style={{background:"#1c2a3a",color:"#94a3b8",border:"1px solid #334155"}}>
-        📄 Export Summary
-      </button>
-      <div className="ml-auto text-xs text-slate-600 hidden md:block">❄️ Snowflake Cortex FP&amp;A</div>
+  const btn="px-4 py-2 rounded-lg text-xs font-bold transition-all hover:opacity-90 active:scale-95 glass glass-hover";
+  return(
+    <div className="sticky-bar px-6 py-3 flex items-center gap-3" style={{background:"rgba(7,13,22,0.9)",borderTop:"1px solid rgba(41,181,232,0.1)"}}>
+      <span className="text-xs mr-1 hidden sm:block" style={{color:"#334155"}}>Export</span>
+      <button onClick={copyNarr} disabled={!cfoNarrative} className={btn} style={{color:c1?"#4ade80":"#64748b",opacity:cfoNarrative?1:0.35}}>{c1?"✓ Copied":"📋 CFO Narrative"}</button>
+      <button onClick={dlCSV} className={btn} style={{color:c2?"#4ade80":"#64748b"}}>{c2?"✓ Downloaded":"⬇ Download CSV"}</button>
+      <button onClick={exportHTML} className={btn} style={{color:"#64748b"}}>📄 Export Summary</button>
+      <div className="ml-auto text-xs hidden md:block" style={{color:"#1e3a5f"}}>❄️ Snowflake Cortex FP&amp;A</div>
     </div>
   );
 }
 
-// ── Root App ─────────────────────────────────────────────────
+// ── App ───────────────────────────────────────────────────────
 function App() {
   const [data,setData]=React.useState(DEMO_DATA);
   const [usingDemo,setUsingDemo]=React.useState(true);
@@ -755,75 +633,65 @@ function App() {
 
   function useDemo(){setData(DEMO_DATA);setUsingDemo(true);setAnalysisResult(null);setAnalysisRows(new Set());}
   function uploadCSV(rows){setData(rows);setUsingDemo(false);setAnalysisResult(null);setAnalysisRows(new Set());}
-
-  function onAnalysisDone(result) {
+  function onAnalysisDone(result){
     const rows=new Set();
-    (result.anomalies||[]).forEach(a=>{
-      data.forEach(r=>{ if(a.toLowerCase().includes(r.department.toLowerCase())&&a.toLowerCase().includes(r.month.toLowerCase())) rows.add(`${r.department}|${r.month}`); });
-    });
+    (result.anomalies||[]).forEach(a=>{data.forEach(r=>{if(String(a.title||a).toLowerCase().includes(r.department.toLowerCase())&&String(a.title||a).toLowerCase().includes(r.month.toLowerCase()))rows.add(`${r.department}|${r.month}`);});});
     (result.root_causes||[]).forEach(rc=>rows.add(`${rc.department}|${rc.month}`));
     setAnalysisRows(rows);
   }
 
   const enriched=React.useMemo(()=>enrichData(data),[data]);
-  const cfoNarrative=analysisResult?.cfo_narrative||"";
-
   const totalBudget=enriched.reduce((s,r)=>s+r.budget,0);
   const totalActual=enriched.reduce((s,r)=>s+r.actual,0);
   const totalDelta=totalActual-totalBudget;
   const redCount=enriched.filter(r=>r.badness>5).length;
+  const cfoNarrative=analysisResult?.cfo_narrative||"";
 
-  const stats=[
-    {label:"Total Budget",   value:"$"+(totalBudget/1000000).toFixed(2)+"M", color:"#64748b"},
-    {label:"Total Actual",   value:"$"+(totalActual/1000000).toFixed(2)+"M", color:SNOWFLAKE_BLUE},
-    {label:"Net Variance",   value:fmt$(totalDelta), color:totalDelta>=0?"#4ade80":"#f87171"},
-    {label:"Red Variances",  value:redCount+" rows",  color:"#f87171"},
-  ];
-
-  return (
-    <div className="min-h-screen pb-20" style={{background:"#0d1117",color:"#e2e8f0"}}>
+  return(
+    <div className="min-h-screen pb-20">
       <Header/>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
-        {/* Data source */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg border border-slate-700/40" style={{background:"#0d1520"}}>
+        {/* Top bar */}
+        <div className="glass rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 fade-up">
           <div>
-            <div className="text-sm font-semibold text-slate-200 mb-0.5">Data Source</div>
-            <div className="text-xs text-slate-500">Switch between demo data or upload your own CSV</div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-1" style={{color:SB}}>Data Source</div>
+            <div className="text-xs" style={{color:"#475569"}}>Upload any CSV — column order and formatting don't matter</div>
           </div>
           <DataInput usingDemo={usingDemo} onUseDemo={useDemo} onCSVUpload={uploadCSV}/>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {stats.map((s,i)=>(
-            <div key={i} className="rounded-lg p-4 border border-slate-700/40" style={{background:"#111827"}}>
-              <div className="text-xs text-slate-500 mb-1">{s.label}</div>
-              <div className="text-xl font-bold" style={{color:s.color}}>{s.value}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 fade-up-2">
+          <StatCard label="Total Budget" value={"$"+(totalBudget/1e6).toFixed(2)+"M"} color="#94a3b8"/>
+          <StatCard label="Total Actual" value={"$"+(totalActual/1e6).toFixed(2)+"M"} color={SB}/>
+          <StatCard label="Net Variance" value={fmt$(totalDelta)} color={totalDelta>=0?"#4ade80":"#f87171"} sub={fmtPct(totalDelta/totalBudget*100)}/>
+          <StatCard label="Red Variances" value={`${redCount} rows`} color={redCount>3?"#f87171":"#facc15"} sub="worse than −5%"/>
         </div>
 
         {/* Table */}
-        <div>
+        <div className="fade-up-3">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-slate-300">📊 Budget vs. Actual — All Departments</h2>
-            <div className="flex gap-3 text-xs text-slate-500">
-              <span><span className="inline-block w-2 h-2 rounded-sm bg-red-900 mr-1"></span>&gt; -5% bad</span>
-              <span><span className="inline-block w-2 h-2 rounded-sm bg-yellow-900 mr-1"></span>-2 to -5%</span>
-              <span><span className="inline-block w-2 h-2 rounded-sm bg-green-900 mr-1"></span>within 2%</span>
+            <div className="section-label">Budget vs. Actual</div>
+            <div className="flex gap-3 text-xs" style={{color:"#334155"}}>
+              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(239,68,68,0.12)",color:"#f87171",border:"1px solid rgba(239,68,68,0.2)",fontSize:10}}>&gt;−5%</span> bad</span>
+              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(234,179,8,0.1)",color:"#facc15",border:"1px solid rgba(234,179,8,0.2)",fontSize:10}}>−2–5%</span> watch</span>
+              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(74,222,128,0.1)",color:"#4ade80",border:"1px solid rgba(74,222,128,0.2)",fontSize:10}}>&lt;2%</span> ok</span>
             </div>
           </div>
           <VarianceTable data={data} analysisRows={analysisRows}/>
         </div>
 
         {/* Analysis */}
-        <AnalysisPanel data={data} onAnalysisDone={onAnalysisDone} analysisResult={analysisResult} setAnalysisResult={setAnalysisResult}/>
-
+        <div><div className="section-label">AI Analysis</div><AnalysisPanel data={data} onAnalysisDone={onAnalysisDone} analysisResult={analysisResult} setAnalysisResult={setAnalysisResult}/></div>
       </main>
-      <footer className="text-center text-xs text-slate-600 py-4 pb-20">
-        Built with Snowflake Cortex ❄️ and Claude AI — {AUTHOR_HANDLE}
+
+      {/* Footer */}
+      <footer className="text-center py-5 pb-20 space-y-1">
+        <div className="text-xs" style={{color:"#1e3a5f"}}>Built with Snowflake Cortex ❄️ and Claude AI</div>
+        <div className="text-xs"><a href={AUTHOR_LINKEDIN} target="_blank" rel="noreferrer" className="font-semibold hover:opacity-80 transition-opacity" style={{color:"#29B5E8"}}>{AUTHOR_NAME}</a></div>
       </footer>
+
       <StickyBar enrichedData={enriched} cfoNarrative={cfoNarrative}/>
     </div>
   );
