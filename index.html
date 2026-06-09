@@ -1,336 +1,328 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cortex FP&A — Variance Intelligence</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Cortex FP&A — Consumption Revenue Intelligence</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    *, *::before, *::after { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-    html { scroll-behavior: smooth; }
-    body { background: #070d16; margin: 0; color: #e2e8f0; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #29B5E8; border-radius: 99px; }
-
-    /* Glow effects */
-    .glow-blue { box-shadow: 0 0 24px rgba(41,181,232,0.15); }
-    .glow-blue-sm { box-shadow: 0 0 12px rgba(41,181,232,0.12); }
-    .btn-primary { background: linear-gradient(135deg,#29B5E8,#1a8fc4); color:#fff; transition:all .2s; }
-    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 20px rgba(41,181,232,0.35); }
-    .btn-primary:active { transform:translateY(0); }
-
-    /* Header gradient underline */
-    .brand-text {
-      background: linear-gradient(90deg, #fff 0%, #29B5E8 60%, #7dd3fc 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-
-    /* Glass card */
-    .glass { background: rgba(15,25,40,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(41,181,232,0.12); }
-    .glass-hover:hover { border-color: rgba(41,181,232,0.28); transition: border-color .2s; }
-
-    /* Table */
-    .data-table th { cursor: pointer; user-select: none; transition: background .15s; }
-    .data-table th:hover { background: rgba(41,181,232,0.08) !important; }
-    .data-table tr { transition: background .15s; }
-    .data-table tbody tr:hover { background: rgba(41,181,232,0.05) !important; }
-
-    /* Flagged row pulse */
-    @keyframes flagPulse {
-      0%,100% { box-shadow: inset 0 0 0 1px rgba(41,181,232,0.2); }
-      50%      { box-shadow: inset 0 0 0 1px rgba(41,181,232,0.5), 0 0 12px rgba(41,181,232,0.1); }
-    }
-    .flagged-row { animation: flagPulse 2.4s ease-in-out infinite; background: rgba(41,181,232,0.05) !important; }
-
-    /* Animated gradient bg strip */
-    @keyframes gradShift {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    .hero-strip {
-      background: linear-gradient(120deg,#070d16,#0a1a2e,#091524,#0d2137,#070d16);
-      background-size: 300% 300%;
-      animation: gradShift 12s ease infinite;
-    }
-
-    /* Snowflake spin on load */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spin { animation: spin 1.2s linear infinite; display:inline-block; }
-
-    /* Fade in */
-    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-    .fade-up { animation: fadeUp .4s ease both; }
-    .fade-up-2 { animation: fadeUp .4s .1s ease both; }
-    .fade-up-3 { animation: fadeUp .4s .2s ease both; }
-
-    /* Badge pill */
-    .pill { display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;letter-spacing:.03em; }
-
-    /* Sticky bar */
-    .sticky-bar { position:fixed;bottom:0;left:0;right:0;z-index:50; backdrop-filter:blur(16px); }
-
-    /* Section divider */
-    .section-label { font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#29B5E8;margin-bottom:12px; }
+    *,*::before,*::after{box-sizing:border-box;font-family:'Inter',sans-serif;}
+    html{scroll-behavior:smooth;}
+    body{background:#0a0f1a;margin:0;color:#e2e8f0;}
+    ::-webkit-scrollbar{width:5px;height:5px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:#29B5E8;border-radius:99px;}
+    .glass{background:rgba(13,20,35,0.9);backdrop-filter:blur(12px);border:1px solid rgba(41,181,232,0.1);}
+    .glass-hover:hover{border-color:rgba(41,181,232,0.25);transition:border-color .2s;}
+    .brand-text{background:linear-gradient(90deg,#fff 0%,#29B5E8 55%,#7dd3fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .btn-primary{background:linear-gradient(135deg,#29B5E8,#1a8fc4);color:#fff;transition:all .2s;}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(41,181,232,0.35);}
+    .btn-primary:active{transform:translateY(0);}
+    .btn-ghost{background:rgba(41,181,232,0.07);color:#64748b;border:1px solid rgba(41,181,232,0.12);transition:all .2s;}
+    .btn-ghost:hover{background:rgba(41,181,232,0.12);color:#94a3b8;}
+    .btn-ghost.active{background:rgba(41,181,232,0.18);color:#29B5E8;border-color:rgba(41,181,232,0.35);}
+    .pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;letter-spacing:.03em;}
+    .data-table th{cursor:pointer;user-select:none;transition:background .15s;}
+    .data-table th:hover{background:rgba(41,181,232,0.06)!important;}
+    .data-table tbody tr:hover{background:rgba(41,181,232,0.04)!important;}
+    @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    .hero-strip{background:linear-gradient(120deg,#0a0f1a,#0d1a2e,#091524,#0a0f1a);background-size:300% 300%;animation:gradShift 14s ease infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 1.2s linear infinite;display:inline-block;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .fade-up{animation:fadeUp .35s ease both;}
+    .fade-up-2{animation:fadeUp .35s .08s ease both;}
+    .fade-up-3{animation:fadeUp .35s .16s ease both;}
+    @keyframes pulseBorder{0%,100%{box-shadow:inset 3px 0 0 rgba(41,181,232,0.3)}50%{box-shadow:inset 3px 0 0 rgba(41,181,232,0.8),0 0 12px rgba(41,181,232,0.08)}}
+    .signal-accelerating{animation:pulseBorderGreen 2.4s ease-in-out infinite;background:rgba(74,222,128,0.04)!important;}
+    .signal-at_risk,.signal-stalling{animation:pulseBorderRed 2.4s ease-in-out infinite;background:rgba(239,68,68,0.04)!important;}
+    .signal-recovering{animation:pulseBorderYellow 2.4s ease-in-out infinite;background:rgba(234,179,8,0.04)!important;}
+    @keyframes pulseBorderGreen{0%,100%{box-shadow:inset 3px 0 0 rgba(74,222,128,0.4)}50%{box-shadow:inset 3px 0 0 rgba(74,222,128,0.9),0 0 10px rgba(74,222,128,0.06)}}
+    @keyframes pulseBorderRed{0%,100%{box-shadow:inset 3px 0 0 rgba(239,68,68,0.4)}50%{box-shadow:inset 3px 0 0 rgba(239,68,68,0.9),0 0 10px rgba(239,68,68,0.06)}}
+    @keyframes pulseBorderYellow{0%,100%{box-shadow:inset 3px 0 0 rgba(234,179,8,0.4)}50%{box-shadow:inset 3px 0 0 rgba(234,179,8,0.9),0 0 10px rgba(234,179,8,0.06)}}
+    .sticky-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;backdrop-filter:blur(16px);}
+    .section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#29B5E8;margin-bottom:10px;}
+    .recharts-tooltip-wrapper{z-index:10!important;}
   </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-// ── Config ───────────────────────────────────────────────────
-const OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE";
-const AUTHOR_NAME    = "Nithya Kuppa";
+// ── Config ────────────────────────────────────────────────────
+const ANTHROPIC_API_KEY = ""; // Replace with your key — calls go through /api/analyze
+const AUTHOR_HANDLE = "@nithyakuppa";
 const AUTHOR_LINKEDIN = "https://www.linkedin.com/in/nithya-kuppa/";
 const SB = "#29B5E8";
 
 // ── Demo Data ─────────────────────────────────────────────────
 const DEMO_DATA = [
-  {department:"Sales",           month:"Jan",budget:500000,actual:423000},
-  {department:"Sales",           month:"Feb",budget:520000,actual:498000},
-  {department:"Sales",           month:"Mar",budget:540000,actual:461000},
-  {department:"Marketing",       month:"Jan",budget:180000,actual:214000},
-  {department:"Marketing",       month:"Feb",budget:185000,actual:227000},
-  {department:"Marketing",       month:"Mar",budget:190000,actual:198000},
-  {department:"Engineering",     month:"Jan",budget:320000,actual:318000},
-  {department:"Engineering",     month:"Feb",budget:325000,actual:331000},
-  {department:"Engineering",     month:"Mar",budget:330000,actual:342000},
-  {department:"G&A",             month:"Jan",budget:95000, actual:92000 },
-  {department:"G&A",             month:"Feb",budget:95000, actual:108000},
-  {department:"G&A",             month:"Mar",budget:95000, actual:97000 },
-  {department:"Customer Success",month:"Jan",budget:140000,actual:137000},
-  {department:"Customer Success",month:"Feb",budget:145000,actual:144000},
-  {department:"Customer Success",month:"Mar",budget:150000,actual:163000},
-  {department:"Product",         month:"Jan",budget:210000,actual:208000},
-  {department:"Product",         month:"Feb",budget:215000,actual:219000},
-  {department:"Product",         month:"Mar",budget:220000,actual:247000},
+  {workload:"Compute (Warehouses)",quarter:"Q1",committed:4200000,consumed:3870000},
+  {workload:"Compute (Warehouses)",quarter:"Q2",committed:4500000,consumed:4120000},
+  {workload:"Compute (Warehouses)",quarter:"Q3",committed:4800000,consumed:5340000},
+  {workload:"Compute (Warehouses)",quarter:"Q4",committed:5100000,consumed:4690000},
+  {workload:"Storage",             quarter:"Q1",committed:980000, consumed:1050000},
+  {workload:"Storage",             quarter:"Q2",committed:1020000,consumed:1190000},
+  {workload:"Storage",             quarter:"Q3",committed:1060000,consumed:1380000},
+  {workload:"Storage",             quarter:"Q4",committed:1100000,consumed:1420000},
+  {workload:"AI / ML Workloads",   quarter:"Q1",committed:620000, consumed:410000},
+  {workload:"AI / ML Workloads",   quarter:"Q2",committed:680000, consumed:590000},
+  {workload:"AI / ML Workloads",   quarter:"Q3",committed:740000, consumed:880000},
+  {workload:"AI / ML Workloads",   quarter:"Q4",committed:800000, consumed:1240000},
+  {workload:"Data Sharing",        quarter:"Q1",committed:310000, consumed:298000},
+  {workload:"Data Sharing",        quarter:"Q2",committed:320000, consumed:334000},
+  {workload:"Data Sharing",        quarter:"Q3",committed:330000, consumed:371000},
+  {workload:"Data Sharing",        quarter:"Q4",committed:340000, consumed:389000},
+  {workload:"Marketplace / Apps",  quarter:"Q1",committed:190000, consumed:87000},
+  {workload:"Marketplace / Apps",  quarter:"Q2",committed:210000, consumed:143000},
+  {workload:"Marketplace / Apps",  quarter:"Q3",committed:230000, consumed:218000},
+  {workload:"Marketplace / Apps",  quarter:"Q4",committed:250000, consumed:312000},
 ];
 
-const REVENUE_DEPTS = new Set(["Sales"]);
-const MONTH_ORDER = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+const Q_ORDER = {Q1:1,Q2:2,Q3:3,Q4:4};
+const WORKLOAD_COLORS = {
+  "Compute (Warehouses)":"#29B5E8",
+  "Storage":"#4ade80",
+  "AI / ML Workloads":"#a78bfa",
+  "Data Sharing":"#fb923c",
+  "Marketplace / Apps":"#f472b6",
+};
+const DEFAULT_COLOR = "#64748b";
 
-// ── Math helpers ──────────────────────────────────────────────
-function calcVariance(row) {
-  const dollar = row.actual - row.budget;
-  const pct = (dollar / row.budget) * 100;
-  const badness = REVENUE_DEPTS.has(row.department) ? -pct : pct;
-  return {dollar, pct, badness};
+// ── Helpers ───────────────────────────────────────────────────
+function fmtM(n){const a=Math.abs(n);if(a>=1e6)return(n<0?"-":"")+"$"+(a/1e6).toFixed(2)+"M";if(a>=1e3)return(n<0?"-":"")+"$"+(a/1e3).toFixed(0)+"K";return(n<0?"-":"")+"$"+a.toLocaleString();}
+function fmtMsigned(n){return(n>=0?"+":"-")+"$"+(Math.abs(n)/1e6).toFixed(2)+"M";}
+function fmtPct(n){return(n>=0?"+":"")+n.toFixed(1)+"%";}
+function fmtRate(n){return n.toFixed(1)+"%";}
+
+function consumptionRate(row){return(row.consumed/row.committed)*100;}
+
+function enrichRow(row){
+  const rate=consumptionRate(row);
+  const gap=row.consumed-row.committed;
+  return{...row,rate,gap};
 }
-function enrichData(rows) { return rows.map(r=>({...r,...calcVariance(r)})); }
 
-function getTrendFlags(enriched) {
-  const byDept = {};
-  enriched.forEach(r=>{if(!byDept[r.department])byDept[r.department]=[];byDept[r.department].push(r);});
-  const flagged = new Set();
-  Object.values(byDept).forEach(rows=>{
-    const sorted=[...rows].sort((a,b)=>(MONTH_ORDER[a.month]||99)-(MONTH_ORDER[b.month]||99));
-    let streak=0;
-    sorted.forEach((r,i)=>{
-      if(r.badness>5){streak++;if(streak>=2){flagged.add(`${r.department}|${r.month}`);flagged.add(`${sorted[i-1].department}|${sorted[i-1].month}`);}}
-      else streak=0;
+function getQoQ(data, workload, quarter){
+  const byQ={};
+  data.filter(r=>r.workload===workload).forEach(r=>{byQ[r.quarter]=r;});
+  const qNum=Q_ORDER[quarter];
+  if(qNum<=1)return null;
+  const prevQ=Object.keys(Q_ORDER).find(k=>Q_ORDER[k]===qNum-1);
+  const prev=byQ[prevQ];const cur=byQ[quarter];
+  if(!prev||!cur)return null;
+  return consumptionRate(cur)-consumptionRate(prev);
+}
+
+function getTrendFlags(data){
+  const workloads=[...new Set(data.map(r=>r.workload))];
+  const accel=new Set(),decline=new Set();
+  workloads.forEach(w=>{
+    const rows=data.filter(r=>r.workload===w).sort((a,b)=>Q_ORDER[a.quarter]-Q_ORDER[b.quarter]);
+    let upStreak=0,downStreak=0;
+    rows.forEach((r,i)=>{
+      if(i===0)return;
+      const prev=rows[i-1];
+      const delta=consumptionRate(r)-consumptionRate(prev);
+      if(delta>0){upStreak++;downStreak=0;}
+      else if(delta<0){downStreak++;upStreak=0;}
+      else{upStreak=0;downStreak=0;}
+      if(upStreak>=2)accel.add(`${w}|${r.quarter}`);
+      if(downStreak>=2)decline.add(`${w}|${r.quarter}`);
     });
   });
-  return flagged;
+  return{accel,decline};
 }
 
-function fmt$(n){const a=Math.abs(n),s=n<0?"-":"+";if(a>=1e6)return s+"$"+(a/1e6).toFixed(2)+"M";if(a>=1e3)return s+"$"+(a/1e3).toFixed(1)+"K";return s+"$"+a.toLocaleString();}
-function fmtPct(n){return(n>=0?"+":"")+n.toFixed(1)+"%";}
-function fmtBig(n){return"$"+Math.abs(n).toLocaleString();}
+function getFastestGrowing(data){
+  const workloads=[...new Set(data.map(r=>r.workload))];
+  let best=null,bestDelta=-Infinity;
+  workloads.forEach(w=>{
+    const rows=data.filter(r=>r.workload===w).sort((a,b)=>Q_ORDER[a.quarter]-Q_ORDER[b.quarter]);
+    if(rows.length<2)return;
+    const delta=consumptionRate(rows[rows.length-1])-consumptionRate(rows[0]);
+    if(delta>bestDelta){bestDelta=delta;best=w;}
+  });
+  return{workload:best,delta:bestDelta};
+}
 
-// ── Smart CSV Parser ─────────────────────────────────────────
-function parseCSV(text) {
-  const rawLines = text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
-  function tokenize(line) {
-    const sep=line.includes("\t")?"\t":line.includes(";")?";":","
-    const tokens=[];let cur="",inQ=false;
-    for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){inQ=!inQ;continue;}if(!inQ&&c===sep){tokens.push(cur.trim());cur="";continue;}cur+=c;}
-    tokens.push(cur.trim());return tokens;
-  }
-  function parseNum(s){
-    if(!s)return NaN;s=String(s).trim().replace(/[$€£¥\s]/g,"");
-    const neg=s.startsWith("(")&&s.endsWith(")");s=s.replace(/[()]/g,"");
-    let mul=1;if(/[Mm]$/.test(s)){mul=1e6;s=s.replace(/[Mm]$/,"");}else if(/[Kk]$/.test(s)){mul=1e3;s=s.replace(/[Kk]$/,"");}
-    s=s.replace(/,/g,"");const n=parseFloat(s)*mul;return isNaN(n)?NaN:(neg?-n:n);
-  }
-  const MN=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-  const ML=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const QM={q1:"Mar",q2:"Jun",q3:"Sep",q4:"Dec"};
-  function normalizeMonth(s){
-    if(!s)return null;s=String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,"");
-    if(/^q[1-4]$/.test(s))return QM[s];
-    for(let i=0;i<MN.length;i++)if(s.startsWith(MN[i]))return ML[i];
-    const n=parseInt(s);if(!isNaN(n)&&n>=1&&n<=12)return ML[n-1];return null;
-  }
-  function scoreCols(headers){
-    const h=headers.map(h=>String(h).toLowerCase().replace(/[^a-z]/g,""));
-    function best(kws){let bi=-1,bs=-1;h.forEach((hh,i)=>{const sc=kws.reduce((s,k)=>s+(hh.includes(k)?k.length:0),0);if(sc>bs){bs=sc;bi=i;}});return bs>0?bi:-1;}
-    return{dept:best(["department","dept","team","division","group","cost","center","bu"]),month:best(["month","period","mo","date","time","quarter"]),budget:best(["budget","plan","target","forecast","bud","planned"]),actual:best(["actual","actuals","real","result","spent","act","ytd","amount"])};
-  }
-  let headerIdx=-1,colMap={dept:-1,month:-1,budget:-1,actual:-1};
-  for(let i=0;i<Math.min(rawLines.length,20);i++){
-    const tokens=tokenize(rawLines[i]);if(tokens.length<2)continue;
-    const scores=scoreCols(tokens);const found=Object.values(scores).filter(v=>v>=0).length;
-    if(found>=3&&found>Object.values(colMap).filter(v=>v>=0).length){headerIdx=i;colMap=scores;}
-  }
-  const dataStart=headerIdx>=0?headerIdx+1:0;
-  if(colMap.dept<0||colMap.budget<0||colMap.actual<0)colMap={dept:0,month:1,budget:2,actual:3};
-  const rows=[];let lastDept="";
-  for(let i=dataStart;i<rawLines.length;i++){
-    const line=rawLines[i].trim();if(!line)continue;
-    const cols=tokenize(line);if(cols.length<2)continue;
-    if(/^\s*(total|subtotal|grand|sum|average|note|source|#)/i.test(line))continue;
-    const rawDept=colMap.dept>=0?cols[colMap.dept]:"";
-    const rawMonth=colMap.month>=0?cols[colMap.month]:"";
-    const dept=rawDept.trim()||lastDept;if(dept)lastDept=dept;
-    const month=normalizeMonth(rawMonth);
-    const budget=parseNum(colMap.budget>=0?cols[colMap.budget]:"");
-    const actual=parseNum(colMap.actual>=0?cols[colMap.actual]:"");
-    if(isNaN(budget)||isNaN(actual))continue;if(!dept&&!month)continue;
-    rows.push({department:dept||"Unknown",month:month||rawMonth||"?",budget,actual});
-  }
+function getAtRisk(data){
+  const workloads=[...new Set(data.map(r=>r.workload))];
+  let worst=null,worstRate=Infinity;
+  workloads.forEach(w=>{
+    const rows=data.filter(r=>r.workload===w).sort((a,b)=>Q_ORDER[a.quarter]-Q_ORDER[b.quarter]);
+    const latest=rows[rows.length-1];
+    const rate=consumptionRate(latest);
+    if(rate<worstRate){worstRate=rate;worst=w;}
+  });
+  return{workload:worst,rate:worstRate};
+}
+
+// ── CSV Parser ────────────────────────────────────────────────
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+  function tok(line){const sep=line.includes("\t")?"\t":line.includes(";")?";":","
+    const t=[];let c="",q=false;for(const ch of line){if(ch==='"'){q=!q;continue;}if(!q&&ch===sep){t.push(c.trim());c="";continue;}c+=ch;}t.push(c.trim());return t;}
+  function num(s){if(!s)return NaN;s=String(s).replace(/[$€£¥,\s]/g,"").replace(/[()]/g,"");if(/[Mm]$/.test(s))return parseFloat(s)*1e6;if(/[Kk]$/.test(s))return parseFloat(s)*1e3;return parseFloat(s);}
+  function normQ(s){s=String(s).trim().toUpperCase();if(/^Q[1-4]$/.test(s))return s;const m={JAN:"Q1",FEB:"Q1",MAR:"Q1",APR:"Q2",MAY:"Q2",JUN:"Q2",JUL:"Q3",AUG:"Q3",SEP:"Q3",OCT:"Q4",NOV:"Q4",DEC:"Q4"};const key=s.slice(0,3).toUpperCase();return m[key]||s;}
+  function scoreH(hs){const h=hs.map(x=>String(x).toLowerCase().replace(/[^a-z]/g,""));const best=(kws)=>{let bi=-1,bs=-1;h.forEach((hh,i)=>{const sc=kws.reduce((s,k)=>s+(hh.includes(k)?k.length:0),0);if(sc>bs){bs=sc;bi=i;}});return bs>0?bi:-1;};
+    return{workload:best(["workload","product","service","feature","sku","category"]),quarter:best(["quarter","q","period","time","month","date"]),committed:best(["committed","commit","budget","contract","plan","target"]),consumed:best(["consumed","consume","actual","usage","used","recognized","revenue"])};}
+  let hi=-1,cm={workload:-1,quarter:-1,committed:-1,consumed:-1};
+  for(let i=0;i<Math.min(lines.length,15);i++){const t=tok(lines[i]);if(t.length<2)continue;const s=scoreH(t);const f=Object.values(s).filter(v=>v>=0).length;if(f>=3&&f>Object.values(cm).filter(v=>v>=0).length){hi=i;cm=s;}}
+  const ds=hi>=0?hi+1:0;if(cm.workload<0||cm.committed<0||cm.consumed<0)cm={workload:0,quarter:1,committed:2,consumed:3};
+  const rows=[];let lastW="";
+  for(let i=ds;i<lines.length;i++){const line=lines[i].trim();if(!line)continue;if(/^(total|subtotal|grand|sum)/i.test(line))continue;
+    const cols=tok(line);if(cols.length<2)continue;
+    const rw=cm.workload>=0?cols[cm.workload]:"";const w=rw.trim()||lastW;if(w)lastW=w;
+    const q=normQ(cm.quarter>=0?cols[cm.quarter]:"");const comm=num(cm.committed>=0?cols[cm.committed]:"");const cons=num(cm.consumed>=0?cols[cm.consumed]:"");
+    if(isNaN(comm)||isNaN(cons))continue;rows.push({workload:w||"Unknown",quarter:q||"?",committed:comm,consumed:cons});}
   return rows;
 }
 
-function buildPrompt(enriched) {
-  const h="Department         | Month | Budget      | Actual      | $ Variance  | % Variance";
-  const d="-".repeat(80);
-  const lines=enriched.map(r=>`${r.department.padEnd(18)} | ${r.month.padEnd(5)} | ${fmtBig(r.budget).padStart(10)} | ${fmtBig(r.actual).padStart(10)} | ${fmt$(r.dollar).padStart(10)} | ${fmtPct(r.pct).padStart(8)}`);
+// ── Build prompt ──────────────────────────────────────────────
+function buildPrompt(data){
+  const h="Workload              | Quarter | Committed   | Consumed    | Gap         | Rate";
+  const d="-".repeat(85);
+  const lines=data.map(r=>{const rate=consumptionRate(r);const gap=r.consumed-r.committed;
+    return`${r.workload.padEnd(22)}| ${r.quarter}     | ${fmtM(r.committed).padStart(10)} | ${fmtM(r.consumed).padStart(10)} | ${fmtMsigned(gap).padStart(10)} | ${fmtRate(rate).padStart(6)}`;});
   return`${h}\n${d}\n${lines.join("\n")}`;
 }
 
-const SYSTEM_PROMPT = `You are a senior FP&A analyst at a SaaS company using Snowflake Cortex. You write like a CFO expects — direct, specific, no filler. Always cite exact dollar amounts and percentages. Return ONLY a valid JSON object with exactly these fields:
+const SYSTEM_PROMPT=`You are a Senior Director of Product Finance at a consumption-based cloud data platform. You analyze committed vs consumed revenue at the workload level to identify adoption risk, revenue acceleration, and pricing signal. You write like an executive — direct, specific, no padding. Respond only in valid JSON with these exact fields:
 {
-  "summary": { "total_budget": number, "total_actual": number, "net_variance_dollar": number, "net_variance_pct": number, "worst_department": string, "best_department": string, "overall_health": "on-track"|"at-risk"|"critical" },
-  "anomalies": [{ "title": string, "detail": "2-3 sentences with exact numbers", "severity": "high"|"medium"|"low", "department": string, "month": string }],
-  "root_causes": [{ "department": string, "month": string, "variance_dollar": number, "variance_pct": number, "hypothesis": string, "contributing_factors": [string], "confidence": "high"|"medium"|"low" }],
-  "department_insights": [{ "department": string, "trend": "improving"|"deteriorating"|"stable"|"volatile", "insight": "2-3 sentences on pattern across months", "action": string }],
-  "risk_flags": [{ "flag": string, "impact": string, "urgency": "immediate"|"watch"|"monitor" }],
-  "recommendations": [{ "priority": number, "action": string, "owner": string, "expected_impact": string }],
-  "cfo_narrative": "Four to five sentence paragraph for a CFO or board. Past tense. Cite specific numbers. Name worst and best departments. End with biggest risk to address."
+  "consumption_story": "2-3 sentence paragraph describing the overall consumption trend across the portfolio. Specific numbers. No hedge words.",
+  "workload_insights": [array of up to 4 objects: {workload, quarter, insight, signal} where signal is one of: "accelerating", "at_risk", "recovering", "stalling"],
+  "pricing_signals": [array of up to 3 strings — what the consumption patterns suggest about pricing power, product-market fit, or contract structure],
+  "recommended_actions": [array of up to 3 strings — what the finance team should do: re-forecast, flag for CSM, adjust committed tiers, etc.],
+  "board_narrative": "3 sentence paragraph written for a board deck. Past tense. Specific workload names and numbers. Frames variance as product signal, not just a miss."
 }
-Return only valid JSON. No markdown fences. No commentary outside the JSON.`;
+Return only valid JSON. No markdown, no preamble.`;
 
-// ── Components ───────────────────────────────────────────────
+// ── Recharts destructure ─────────────────────────────────────
+const {LineChart,Line,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,ReferenceLine,Cell}=Recharts;
 
-function Header() {
-  return (
-    <header className="hero-strip border-b" style={{borderColor:"rgba(41,181,232,0.12)"}}>
+// ── Components ────────────────────────────────────────────────
+
+function Header(){
+  return(
+    <header className="hero-strip border-b" style={{borderColor:"rgba(41,181,232,0.1)"}}>
       <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl glow-blue-sm" style={{background:"linear-gradient(135deg,#0d2137,#1a3a5c)",border:"1px solid rgba(41,181,232,0.3)"}}>❄️</div>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{background:"linear-gradient(135deg,#0d1e33,#1a3a5c)",border:"1px solid rgba(41,181,232,0.25)",boxShadow:"0 0 16px rgba(41,181,232,0.1)"}}>❄️</div>
           <div>
             <div className="text-2xl font-bold tracking-tight brand-text leading-none">Cortex FP&amp;A</div>
-            <div className="text-xs font-medium mt-0.5" style={{color:"rgba(41,181,232,0.75)"}}>Variance Intelligence — Powered by Snowflake Cortex</div>
+            <div className="text-xs font-medium mt-0.5" style={{color:"rgba(41,181,232,0.65)"}}>Consumption Revenue Intelligence — Powered by Snowflake Cortex</div>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full" style={{background:"rgba(41,181,232,0.08)",border:"1px solid rgba(41,181,232,0.15)"}}>
-          <div className="w-1.5 h-1.5 rounded-full bg-green-400" style={{boxShadow:"0 0 6px #4ade80"}}></div>
-          <span className="text-xs font-medium" style={{color:"#94a3b8"}}>Live Analysis</span>
+        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full" style={{background:"rgba(41,181,232,0.06)",border:"1px solid rgba(41,181,232,0.12)"}}>
+          <div className="w-1.5 h-1.5 rounded-full" style={{background:"#4ade80",boxShadow:"0 0 6px #4ade80"}}></div>
+          <span className="text-xs font-medium" style={{color:"#64748b"}}>Live · Product Finance</span>
         </div>
       </div>
     </header>
   );
 }
 
-function StatCard({label, value, sub, color}) {
-  return (
-    <div className="glass glass-hover rounded-xl p-4 fade-up">
-      <div className="text-xs font-medium mb-2" style={{color:"#64748b"}}>{label}</div>
-      <div className="text-2xl font-bold leading-none mb-1" style={{color:color||"#e2e8f0"}}>{value}</div>
-      {sub && <div className="text-xs" style={{color:"#475569"}}>{sub}</div>}
+function KPICard({label,value,sub,color,icon}){
+  return(
+    <div className="glass glass-hover rounded-2xl p-5 fade-up">
+      <div className="flex items-start justify-between mb-3">
+        <div className="text-xs font-semibold uppercase tracking-wider" style={{color:"#475569"}}>{label}</div>
+        <span className="text-base">{icon}</span>
+      </div>
+      <div className="text-2xl font-bold mb-1 leading-none" style={{color:color||"#e2e8f0"}}>{value}</div>
+      {sub&&<div className="text-xs mt-1" style={{color:"#475569"}}>{sub}</div>}
     </div>
   );
 }
 
-function DataInput({usingDemo, onUseDemo, onCSVUpload}) {
-  const ref = React.useRef();
-  function handleFile(e) {
-    const file=e.target.files[0];if(!file)return;
-    const reader=new FileReader();
-    reader.onload=ev=>{const rows=parseCSV(ev.target.result);if(!rows.length){alert("Could not parse CSV.");return;}onCSVUpload(rows);};
-    reader.readAsText(file);e.target.value="";
-  }
-  return (
+function DataInput({usingDemo,onUseDemo,onCSVUpload}){
+  const ref=React.useRef();
+  function handleFile(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{const rows=parseCSV(ev.target.result);if(!rows.length){alert("Could not parse. Need columns: Workload, Quarter, Committed, Consumed");return;}onCSVUpload(rows);};r.readAsText(file);e.target.value="";}
+  return(
     <div className="flex flex-wrap items-center gap-2">
-      <button onClick={onUseDemo} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${usingDemo?"btn-primary":"glass glass-hover"}`} style={usingDemo?{}:{color:"#94a3b8"}}>
-        📊 Demo Data
-      </button>
-      <button onClick={()=>ref.current.click()} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${!usingDemo?"btn-primary":"glass glass-hover"}`} style={!usingDemo?{}:{color:"#94a3b8"}}>
-        📁 Upload CSV
-      </button>
-      <input ref={ref} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile}/>
-      <span className="text-xs" style={{color:"#334155"}}>Any format · any column order · messy data ok</span>
+      <button onClick={onUseDemo} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${usingDemo?"btn-primary":"btn-ghost"}`}>📊 Demo Data</button>
+      <button onClick={()=>ref.current.click()} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${!usingDemo?"btn-primary":"btn-ghost"}`}>📁 Upload CSV</button>
+      <input ref={ref} type="file" accept=".csv" className="hidden" onChange={handleFile}/>
+      <span className="text-xs" style={{color:"#334155"}}>Columns: Workload, Quarter, Committed, Consumed</span>
     </div>
   );
 }
 
-function SortIcon({col,sortCol,sortDir}) {
-  if(sortCol!==col)return<span className="ml-1 opacity-30 text-xs">⇅</span>;
-  return<span className="ml-1 text-xs" style={{color:SB}}>{sortDir==="asc"?"↑":"↓"}</span>;
+function SortIcon({col,sc,sd}){
+  if(sc!==col)return<span className="ml-1 opacity-25 text-xs">⇅</span>;
+  return<span className="ml-1 text-xs" style={{color:SB}}>{sd==="asc"?"↑":"↓"}</span>;
 }
 
-function VarianceTable({data, analysisRows}) {
-  const [sortCol,setSortCol]=React.useState("badness");
-  const [sortDir,setSortDir]=React.useState("desc");
-  const enriched=React.useMemo(()=>enrichData(data),[data]);
-  const trendFlags=React.useMemo(()=>getTrendFlags(enriched),[enriched]);
-  function handleSort(col){if(sortCol===col)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortCol(col);setSortDir("desc");}}
-  const sorted=React.useMemo(()=>[...enriched].sort((a,b)=>{let av=a[sortCol],bv=b[sortCol];if(typeof av==="string"){av=av.toLowerCase();bv=bv.toLowerCase();}return sortDir==="asc"?(av<bv?-1:av>bv?1:0):(av>bv?-1:av<bv?1:0);}), [enriched,sortCol,sortDir]);
+function rateBadge(rate){
+  if(rate>=95)return{bg:"rgba(74,222,128,0.1)",color:"#4ade80",border:"rgba(74,222,128,0.2)"};
+  if(rate>=80)return{bg:"rgba(234,179,8,0.08)",color:"#facc15",border:"rgba(234,179,8,0.2)"};
+  return{bg:"rgba(239,68,68,0.1)",color:"#f87171",border:"rgba(239,68,68,0.2)"};
+}
+
+function VarianceTable({data,signalRows}){
+  const [sc,setSc]=React.useState("rate");
+  const [sd,setSd]=React.useState("asc");
+  function sort(col){if(sc===col)setSd(d=>d==="asc"?"desc":"asc");else{setSc(col);setSd("asc");}}
+  const {accel,decline}=React.useMemo(()=>getTrendFlags(data),[data]);
+
+  const enriched=React.useMemo(()=>data.map(r=>{const rate=consumptionRate(r);const gap=r.consumed-r.committed;const qoq=getQoQ(data,r.workload,r.quarter);return{...r,rate,gap,qoq};}),[data]);
+  const sorted=React.useMemo(()=>[...enriched].sort((a,b)=>{let av=a[sc],bv=b[sc];if(typeof av==="string"){av=av.toLowerCase();bv=bv.toLowerCase();}return sd==="asc"?(av<bv?-1:av>bv?1:0):(av>bv?-1:av<bv?1:0);}),[enriched,sc,sd]);
 
   const COLS=[
-    {key:"department",label:"Department"},
-    {key:"month",label:"Month"},
-    {key:"budget",label:"Budget",align:"right"},
-    {key:"actual",label:"Actual",align:"right"},
-    {key:"dollar",label:"$ Variance",align:"right"},
-    {key:"pct",label:"% Variance",align:"right"},
+    {key:"workload",label:"Workload"},
+    {key:"quarter",label:"Qtr"},
+    {key:"committed",label:"Committed",align:"right"},
+    {key:"consumed",label:"Consumed",align:"right"},
+    {key:"gap",label:"$ Gap",align:"right"},
+    {key:"rate",label:"Consumption Rate",align:"right"},
+    {key:"qoq",label:"QoQ Δ",align:"right"},
     {key:"trend",label:"",align:"center",noSort:true},
   ];
 
-  function badgeCls(badness){
-    if(badness>5)return{bg:"rgba(239,68,68,0.15)",color:"#f87171",border:"rgba(239,68,68,0.3)"};
-    if(badness>2)return{bg:"rgba(234,179,8,0.12)",color:"#facc15",border:"rgba(234,179,8,0.25)"};
-    return{bg:"rgba(74,222,128,0.1)",color:"#4ade80",border:"rgba(74,222,128,0.2)"};
-  }
-
-  return (
-    <div className="rounded-2xl overflow-hidden glass" style={{border:"1px solid rgba(41,181,232,0.12)"}}>
+  return(
+    <div className="rounded-2xl overflow-hidden glass">
       <div className="overflow-x-auto">
-        <table className="w-full data-table" style={{borderCollapse:"collapse",fontSize:"13px"}}>
+        <table className="w-full data-table" style={{borderCollapse:"collapse",fontSize:"12.5px"}}>
           <thead>
-            <tr style={{background:"rgba(7,13,22,0.9)",borderBottom:"1px solid rgba(41,181,232,0.12)"}}>
+            <tr style={{background:"rgba(5,10,20,0.95)",borderBottom:"1px solid rgba(41,181,232,0.1)"}}>
               {COLS.map(c=>(
-                <th key={c.key} onClick={()=>!c.noSort&&handleSort(c.key)}
-                  className={`px-5 py-3.5 font-semibold ${c.align==="right"?"text-right":c.align==="center"?"text-center":"text-left"}`}
-                  style={{color:"#475569",fontSize:"11px",letterSpacing:".07em",textTransform:"uppercase"}}>
-                  {c.label}{!c.noSort&&<SortIcon col={c.key} sortCol={sortCol} sortDir={sortDir}/>}
+                <th key={c.key} onClick={()=>!c.noSort&&sort(c.key)}
+                  className={`px-4 py-3.5 font-semibold ${c.align==="right"?"text-right":c.align==="center"?"text-center":"text-left"}`}
+                  style={{color:"#3d5166",fontSize:"10.5px",letterSpacing:".07em",textTransform:"uppercase"}}>
+                  {c.label}{!c.noSort&&<SortIcon col={c.key} sc={sc} sd={sd}/>}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {sorted.map((row,i)=>{
-              const key=`${row.department}|${row.month}`;
-              const isAI=analysisRows.has(key);
-              const isTrend=trendFlags.has(key);
-              const bc=badgeCls(row.badness);
+              const key=`${row.workload}|${row.quarter}`;
+              const sig=signalRows[key];
+              const bc=rateBadge(row.rate);
+              const isAccel=accel.has(key),isDecline=decline.has(key);
+              const wc=WORKLOAD_COLORS[row.workload]||DEFAULT_COLOR;
               return(
-                <tr key={i} className={isAI?"flagged-row":""} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:isAI?"rgba(41,181,232,0.05)":i%2===0?"transparent":"rgba(255,255,255,0.015)"}}>
-                  <td className="px-5 py-3 font-semibold" style={{color:"#cbd5e1"}}>{row.department}</td>
-                  <td className="px-5 py-3" style={{color:"#64748b"}}>{row.month}</td>
-                  <td className="px-5 py-3 text-right" style={{color:"#94a3b8"}}>{fmtBig(row.budget)}</td>
-                  <td className="px-5 py-3 text-right" style={{color:"#cbd5e1",fontWeight:500}}>{fmtBig(row.actual)}</td>
-                  <td className={`px-5 py-3 text-right font-semibold`} style={{color:row.dollar<0?"#f87171":"#4ade80"}}>{fmt$(row.dollar)}</td>
-                  <td className="px-5 py-3 text-right">
-                    <span className="pill" style={{background:bc.bg,color:bc.color,border:`1px solid ${bc.border}`}}>{fmtPct(row.pct)}</span>
+                <tr key={i} className={sig?`signal-${sig}`:""} style={{borderBottom:"1px solid rgba(255,255,255,0.03)",transition:"background .15s"}}>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{background:wc,boxShadow:`0 0 5px ${wc}66`}}></div>
+                      <span className="font-semibold" style={{color:"#cbd5e1"}}>{row.workload}</span>
+                    </div>
                   </td>
-                  <td className="px-5 py-3 text-center text-sm">{isTrend?"🔴":""}</td>
+                  <td className="px-4 py-2.5" style={{color:"#475569",fontWeight:500}}>{row.quarter}</td>
+                  <td className="px-4 py-2.5 text-right" style={{color:"#64748b"}}>{fmtM(row.committed)}</td>
+                  <td className="px-4 py-2.5 text-right font-semibold" style={{color:"#94a3b8"}}>{fmtM(row.consumed)}</td>
+                  <td className="px-4 py-2.5 text-right font-semibold" style={{color:row.gap>=0?"#4ade80":"#f87171"}}>{fmtMsigned(row.gap)}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <span className="pill" style={{background:bc.bg,color:bc.color,border:`1px solid ${bc.border}`}}>{fmtRate(row.rate)}</span>
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-xs font-semibold" style={{color:row.qoq===null?"#334155":row.qoq>0?"#4ade80":"#f87171"}}>{row.qoq===null?"—":fmtPct(row.qoq)}</td>
+                  <td className="px-4 py-2.5 text-center text-sm">{isAccel?"🟢":isDecline?"🔴":""}</td>
                 </tr>
               );
             })}
@@ -341,9 +333,101 @@ function VarianceTable({data, analysisRows}) {
   );
 }
 
-function SectionCard({title, icon, children, accent, className=""}) {
-  return (
-    <div className={`glass glass-hover rounded-2xl p-5 ${className}`} style={{border:`1px solid ${accent||"rgba(41,181,232,0.12)"}`}}>
+function TrajectoryChart({data}){
+  const workloads=React.useMemo(()=>[...new Set(data.map(r=>r.workload))],[data]);
+  const [visible,setVisible]=React.useState(()=>{const s={};workloads.forEach(w=>s[w]=true);return s;});
+  const quarters=["Q1","Q2","Q3","Q4"];
+
+  const chartData=React.useMemo(()=>quarters.map(q=>{
+    const pt={quarter:q};
+    workloads.forEach(w=>{
+      const row=data.find(r=>r.workload===w&&r.quarter===q);
+      if(row){pt[`${w}_committed`]=row.committed;pt[`${w}_consumed`]=row.consumed;}
+    });
+    return pt;
+  }),[data]);
+
+  function toggle(w){setVisible(v=>({...v,[w]:!v[w]}));}
+
+  const fmtAxis=(v)=>{if(v>=1e6)return"$"+(v/1e6).toFixed(1)+"M";if(v>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v;};
+
+  return(
+    <div className="glass glass-hover rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="section-label mb-0">Workload Trajectory — Committed vs Consumed</div>
+      </div>
+      <div className="flex flex-wrap gap-2 mb-5">
+        {workloads.map(w=>(
+          <button key={w} onClick={()=>toggle(w)} className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${visible[w]?"":"opacity-35"}`}
+            style={{background:visible[w]?`${WORKLOAD_COLORS[w]||DEFAULT_COLOR}18`:"rgba(255,255,255,0.04)",color:visible[w]?WORKLOAD_COLORS[w]||DEFAULT_COLOR:"#475569",border:`1px solid ${visible[w]?`${WORKLOAD_COLORS[w]||DEFAULT_COLOR}40`:"rgba(255,255,255,0.06)"}`,transition:"all .2s"}}>
+            <span className="w-2 h-2 rounded-full" style={{background:WORKLOAD_COLORS[w]||DEFAULT_COLOR}}></span>{w}
+          </button>
+        ))}
+      </div>
+      <ResponsiveContainer width="100%" height={280}>
+        <LineChart data={chartData} margin={{top:4,right:16,left:8,bottom:4}}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
+          <XAxis dataKey="quarter" tick={{fill:"#475569",fontSize:11}} axisLine={{stroke:"rgba(255,255,255,0.06)"}} tickLine={false}/>
+          <YAxis tickFormatter={fmtAxis} tick={{fill:"#475569",fontSize:11}} axisLine={false} tickLine={false} width={72}/>
+          <Tooltip contentStyle={{background:"#0d1a2e",border:"1px solid rgba(41,181,232,0.2)",borderRadius:10,fontSize:12,color:"#e2e8f0"}} formatter={(v,n)=>[fmtM(v),n.replace(/_committed|_consumed/,"")]} labelStyle={{color:"#64748b",marginBottom:4}}/>
+          {workloads.map(w=>visible[w]&&[
+            <Line key={`${w}_committed`} type="monotone" dataKey={`${w}_committed`} stroke={WORKLOAD_COLORS[w]||DEFAULT_COLOR} strokeWidth={1.5} strokeDasharray="5 4" dot={false} name={`${w} (committed)`}/>,
+            <Line key={`${w}_consumed`}  type="monotone" dataKey={`${w}_consumed`}  stroke={WORKLOAD_COLORS[w]||DEFAULT_COLOR} strokeWidth={2.5} dot={{r:3,fill:WORKLOAD_COLORS[w]||DEFAULT_COLOR,strokeWidth:0}} activeDot={{r:5}} name={`${w} (consumed)`}/>,
+          ])}
+        </LineChart>
+      </ResponsiveContainer>
+      <div className="flex items-center gap-4 mt-3 text-xs" style={{color:"#334155"}}>
+        <span className="flex items-center gap-1.5"><span style={{display:"inline-block",width:20,height:2,borderTop:"2px dashed #64748b"}}></span>Committed</span>
+        <span className="flex items-center gap-1.5"><span style={{display:"inline-block",width:20,height:2,background:"#64748b",borderRadius:2}}></span>Consumed</span>
+      </div>
+    </div>
+  );
+}
+
+function WaterfallChart({data}){
+  const workloads=[...new Set(data.map(r=>r.workload))];
+  const chartData=workloads.map(w=>{
+    const rows=data.filter(r=>r.workload===w);
+    const gap=rows.reduce((s,r)=>s+(r.consumed-r.committed),0);
+    return{workload:w,gap,shortName:w.replace("Compute (Warehouses)","Compute").replace("Marketplace / Apps","Marketplace").replace("AI / ML Workloads","AI/ML")};
+  }).sort((a,b)=>a.gap-b.gap);
+
+  const fmt=(v)=>{if(Math.abs(v)>=1e6)return(v>=0?"+":"-")+"$"+(Math.abs(v)/1e6).toFixed(1)+"M";return(v>=0?"+":"-")+"$"+(Math.abs(v)/1e3).toFixed(0)+"K";};
+
+  const CustomLabel=({x,y,width,value})=>{
+    const isPos=value>=0;
+    return<text x={x+width/2} y={isPos?y-6:y+Math.abs(width)+14} textAnchor="middle" fill={isPos?"#4ade80":"#f87171"} fontSize={11} fontWeight={600}>{fmt(value)}</text>;
+  };
+
+  return(
+    <div className="glass glass-hover rounded-2xl p-5">
+      <div className="section-label">Consumption Gap by Workload — Total Across All Quarters</div>
+      <div className="text-xs mb-5" style={{color:"#334155"}}>Blue = over-consumption (revenue upside) · Red = under-consumption (revenue risk)</div>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={chartData} margin={{top:24,right:16,left:8,bottom:4}}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
+          <XAxis dataKey="shortName" tick={{fill:"#475569",fontSize:11}} axisLine={false} tickLine={false}/>
+          <YAxis tickFormatter={fmt} tick={{fill:"#475569",fontSize:11}} axisLine={false} tickLine={false} width={72}/>
+          <Tooltip contentStyle={{background:"#0d1a2e",border:"1px solid rgba(41,181,232,0.2)",borderRadius:10,fontSize:12,color:"#e2e8f0"}} formatter={(v)=>[fmt(v),"Consumption Gap"]} labelStyle={{color:"#64748b"}}/>
+          <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" strokeWidth={1.5}/>
+          <Bar dataKey="gap" radius={[4,4,0,0]} label={<CustomLabel/>}>
+            {chartData.map((entry,i)=><Cell key={i} fill={entry.gap>=0?"rgba(41,181,232,0.7)":"rgba(239,68,68,0.6)"} stroke={entry.gap>=0?"rgba(41,181,232,0.4)":"rgba(239,68,68,0.3)"} strokeWidth={1}/>)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SignalChip({s}){
+  const map={accelerating:{bg:"rgba(74,222,128,0.1)",color:"#4ade80",border:"rgba(74,222,128,0.25)"},at_risk:{bg:"rgba(239,68,68,0.1)",color:"#f87171",border:"rgba(239,68,68,0.25)"},stalling:{bg:"rgba(239,68,68,0.1)",color:"#f87171",border:"rgba(239,68,68,0.25)"},recovering:{bg:"rgba(234,179,8,0.08)",color:"#facc15",border:"rgba(234,179,8,0.25)"}};
+  const c=map[s]||{bg:"rgba(100,116,139,0.1)",color:"#94a3b8",border:"rgba(100,116,139,0.2)"};
+  return<span className="pill" style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`}}>{s?.replace("_"," ")}</span>;
+}
+
+function SectionCard({title,icon,children,accent}){
+  return(
+    <div className="glass glass-hover rounded-2xl p-5" style={{border:`1px solid ${accent||"rgba(41,181,232,0.1)"}`}}>
       <div className="flex items-center gap-2.5 mb-4">
         <span className="text-base">{icon}</span>
         <span className="text-xs font-bold uppercase tracking-widest" style={{color:SB}}>{title}</span>
@@ -353,239 +437,124 @@ function SectionCard({title, icon, children, accent, className=""}) {
   );
 }
 
-function SeverityBadge({s}) {
-  const map={high:{bg:"rgba(239,68,68,0.12)",color:"#f87171",border:"rgba(239,68,68,0.25)"},medium:{bg:"rgba(234,179,8,0.1)",color:"#facc15",border:"rgba(234,179,8,0.2)"},low:{bg:"rgba(100,116,139,0.12)",color:"#94a3b8",border:"rgba(100,116,139,0.2)"}};
-  const c=map[s]||map.low;
-  return<span className="pill" style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`}}>{s}</span>;
-}
-
-function UrgencyBadge({u}) {
-  const map={immediate:{bg:"rgba(239,68,68,0.12)",color:"#f87171",border:"rgba(239,68,68,0.25)"},watch:{bg:"rgba(234,179,8,0.1)",color:"#facc15",border:"rgba(234,179,8,0.2)"},monitor:{bg:"rgba(100,116,139,0.1)",color:"#94a3b8",border:"rgba(100,116,139,0.2)"}};
-  const c=map[u]||map.monitor;
-  return<span className="pill" style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`}}>{u}</span>;
-}
-
-function ConfidenceDot({c}) {
-  const col=c==="high"?"#4ade80":c==="medium"?"#facc15":"#94a3b8";
-  return<span className="flex items-center gap-1 text-xs" style={{color:col}}><span style={{width:6,height:6,borderRadius:"50%",background:col,display:"inline-block",boxShadow:`0 0 5px ${col}`}}></span>{c}</span>;
-}
-
-function TrendChip({t}) {
-  const map={improving:{color:"#4ade80",icon:"↗"},deteriorating:{color:"#f87171",icon:"↘"},volatile:{color:"#facc15",icon:"↕"},stable:{color:"#94a3b8",icon:"→"}};
-  const c=map[t]||map.stable;
-  return<span className="text-xs font-semibold" style={{color:c.color}}>{c.icon} {t}</span>;
-}
-
-function AnalysisPanel({data, onAnalysisDone, analysisResult, setAnalysisResult}) {
+function AnalysisPanel({data,onDone,result,setResult}){
   const [status,setStatus]=React.useState("idle");
-  const [errorMsg,setErrorMsg]=React.useState("");
+  const [err,setErr]=React.useState("");
   const [copied,setCopied]=React.useState(false);
 
-  async function runAnalysis() {
-    setStatus("loading");setErrorMsg("");setAnalysisResult(null);
-    const enriched=enrichData(data);
-    try {
-      const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4o",max_tokens:3000,messages:[{role:"system",content:SYSTEM_PROMPT},{role:"user",content:buildPrompt(enriched)}]})});
+  async function run(){
+    setStatus("loading");setErr("");setResult(null);
+    try{
+      const res=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4o",max_tokens:3000,messages:[{role:"system",content:SYSTEM_PROMPT},{role:"user",content:buildPrompt(data)}]})});
       if(!res.ok){const e=await res.text();throw new Error(`API ${res.status}: ${e}`);}
       const json=await res.json();
       const raw=json.choices?.[0]?.message?.content||"";
       const text=raw.replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"").trim();
-      try{const parsed=JSON.parse(text);setAnalysisResult(parsed);onAnalysisDone(parsed);setStatus("done");}
-      catch{setAnalysisResult({_raw:text});onAnalysisDone({});setStatus("done");}
-    } catch(e){setErrorMsg(e.message);setStatus("error");}
+      try{const p=JSON.parse(text);setResult(p);onDone(p);setStatus("done");}
+      catch{setResult({_raw:text});onDone({});setStatus("done");}
+    }catch(e){setErr(e.message);setStatus("error");}
   }
 
-  function copyNarrative(){navigator.clipboard.writeText(analysisResult?.cfo_narrative||"").then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});}
+  function copyNarr(){navigator.clipboard.writeText(result?.board_narrative||"").then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2200);});}
 
-  const r=analysisResult||{};
-
-  return (
-    <div className="glass rounded-2xl p-6" style={{border:"1px solid rgba(41,181,232,0.15)"}}>
-      {/* Panel header */}
+  return(
+    <div className="glass rounded-2xl p-6" style={{border:"1px solid rgba(41,181,232,0.14)"}}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">❄️</span>
-            <h2 className="text-base font-bold text-white">Cortex AI Analysis</h2>
-          </div>
-          <p className="text-xs" style={{color:"#475569"}}>GPT-4o · Snowflake Cortex inference layer</p>
+          <div className="flex items-center gap-2 mb-1"><span className="text-lg">❄️</span><h2 className="text-sm font-bold text-white">Cortex AI Analysis</h2></div>
+          <p className="text-xs" style={{color:"#334155"}}>GPT-4o · Product Finance mode · Consumption-based revenue signals</p>
         </div>
-        {status!=="loading" && (
-          <button onClick={runAnalysis} className="btn-primary px-5 py-2.5 rounded-xl text-sm font-bold">
-            {status==="done"?"↺ Re-run Analysis":"▶ Run Cortex Analysis"}
-          </button>
-        )}
+        {status!=="loading"&&<button onClick={run} className="btn-primary px-5 py-2.5 rounded-xl text-sm font-bold">{status==="done"?"↺ Re-run":"▶ Run Cortex Analysis"}</button>}
       </div>
 
-      {/* Idle */}
-      {status==="idle" && (
-        <div className="rounded-xl py-12 text-center" style={{border:"1px dashed rgba(41,181,232,0.12)"}}>
-          <div className="text-3xl mb-3">❄️</div>
-          <div className="text-sm font-medium text-slate-400">Click <strong style={{color:SB}}>Run Cortex Analysis</strong> to generate deep AI insights</div>
-          <div className="text-xs mt-1" style={{color:"#334155"}}>Anomalies · Root causes · Dept trends · CFO narrative</div>
-        </div>
-      )}
+      {status==="idle"&&<div className="rounded-xl py-12 text-center" style={{border:"1px dashed rgba(41,181,232,0.1)"}}>
+        <div className="text-3xl mb-3">❄️</div>
+        <div className="text-sm font-medium text-slate-400 mb-1">Run AI analysis to surface consumption signals</div>
+        <div className="text-xs" style={{color:"#334155"}}>Adoption risk · Pricing signals · Board narrative · Recommended actions</div>
+      </div>}
 
-      {/* Loading */}
-      {status==="loading" && (
-        <div className="rounded-xl py-14 text-center" style={{border:"1px dashed rgba(41,181,232,0.12)"}}>
-          <div className="spin text-3xl mb-4">❄️</div>
-          <div className="text-sm font-semibold mb-1" style={{color:SB}}>Cortex is analyzing your variance data…</div>
-          <div className="text-xs" style={{color:"#334155"}}>Running inference on Snowflake Cortex</div>
-        </div>
-      )}
+      {status==="loading"&&<div className="rounded-xl py-14 text-center" style={{border:"1px dashed rgba(41,181,232,0.1)"}}>
+        <div className="spin text-3xl mb-4">❄️</div>
+        <div className="text-sm font-semibold mb-1" style={{color:SB}}>Cortex is analyzing workload consumption patterns…</div>
+        <div className="text-xs" style={{color:"#334155"}}>Running inference on Snowflake Cortex</div>
+      </div>}
 
-      {/* Error */}
-      {status==="error" && (
-        <div className="rounded-xl p-5" style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.2)"}}>
-          <div className="text-sm font-bold text-red-400 mb-1">⚠ Analysis failed</div>
-          <div className="text-xs text-red-300/60 mb-4 break-all font-mono">{errorMsg}</div>
-          <button onClick={runAnalysis} className="px-4 py-2 rounded-lg text-xs font-bold" style={{background:"rgba(239,68,68,0.12)",color:"#f87171",border:"1px solid rgba(239,68,68,0.25)"}}>Retry</button>
-        </div>
-      )}
+      {status==="error"&&<div className="rounded-xl p-5" style={{background:"rgba(239,68,68,0.05)",border:"1px solid rgba(239,68,68,0.18)"}}>
+        <div className="text-sm font-bold text-red-400 mb-1">⚠ Analysis failed</div>
+        <div className="text-xs text-red-300/50 mb-4 break-all font-mono">{err}</div>
+        <button onClick={run} className="px-4 py-2 rounded-lg text-xs font-bold" style={{background:"rgba(239,68,68,0.1)",color:"#f87171",border:"1px solid rgba(239,68,68,0.2)"}}>Retry</button>
+      </div>}
 
-      {/* Results */}
-      {status==="done" && analysisResult && (
+      {status==="done"&&result&&(
         <div className="space-y-4 fade-up">
-          {r._raw ? (
-            <div className="rounded-xl p-4" style={{background:"rgba(234,179,8,0.06)",border:"1px solid rgba(234,179,8,0.2)"}}>
-              <div className="text-xs text-yellow-400 mb-2 font-semibold">⚠ Raw response — JSON parse failed</div>
-              <pre className="text-xs text-slate-300 whitespace-pre-wrap overflow-auto max-h-64">{r._raw}</pre>
+          {result._raw?(
+            <div className="rounded-xl p-4" style={{background:"rgba(234,179,8,0.05)",border:"1px solid rgba(234,179,8,0.15)"}}>
+              <div className="text-xs text-yellow-400 mb-2 font-semibold">⚠ Raw response</div>
+              <pre className="text-xs text-slate-300 whitespace-pre-wrap overflow-auto max-h-64">{result._raw}</pre>
             </div>
-          ) : (<>
-
-            {/* Health bar */}
-            {r.summary && (() => {
-              const s=r.summary;
-              const hc=s.overall_health==="on-track"?"#4ade80":s.overall_health==="at-risk"?"#facc15":"#f87171";
-              const hb=s.overall_health==="on-track"?"rgba(74,222,128,0.08)":s.overall_health==="at-risk"?"rgba(234,179,8,0.08)":"rgba(239,68,68,0.08)";
-              const hborder=s.overall_health==="on-track"?"rgba(74,222,128,0.2)":s.overall_health==="at-risk"?"rgba(234,179,8,0.2)":"rgba(239,68,68,0.2)";
-              return(
-                <div className="rounded-xl p-4 flex flex-wrap gap-6 items-center" style={{background:hb,border:`1px solid ${hborder}`}}>
-                  <div>
-                    <div className="text-xs mb-1.5" style={{color:"#64748b"}}>Overall Health</div>
-                    <span className="pill text-sm font-bold px-3 py-1" style={{background:"rgba(0,0,0,0.3)",color:hc,border:`1px solid ${hc}44`}}>{s.overall_health?.toUpperCase()}</span>
-                  </div>
-                  {[
-                    {label:"Net Variance",value:`${s.net_variance_dollar>=0?"+":"-"}$${Math.abs(s.net_variance_dollar||0).toLocaleString()}`,sub:`${s.net_variance_pct>=0?"+":""}${(s.net_variance_pct||0).toFixed(1)}%`,color:s.net_variance_dollar>=0?"#4ade80":"#f87171"},
-                    {label:"Worst Dept",value:s.worst_department,color:"#f87171"},
-                    {label:"Best Dept",value:s.best_department,color:"#4ade80"},
-                  ].map((x,i)=>(
-                    <div key={i}>
-                      <div className="text-xs mb-1" style={{color:"#64748b"}}>{x.label}</div>
-                      <div className="text-sm font-bold" style={{color:x.color}}>{x.value}<span className="text-xs font-normal ml-1" style={{color:"#475569"}}>{x.sub}</span></div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* 2-col grid: Anomalies + Root Causes */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <SectionCard title="Anomalies Detected" icon="🔍">
-                <div className="space-y-3">
-                  {(r.anomalies||[]).map((a,i)=>(
-                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(7,13,22,0.6)",border:"1px solid rgba(255,255,255,0.05)"}}>
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span className="text-xs font-bold text-slate-100">{a.title||a}</span>
-                        {a.severity&&<SeverityBadge s={a.severity}/>}
-                      </div>
-                      {a.department&&<div className="text-xs mb-1.5" style={{color:"#475569"}}>{a.department} · {a.month}</div>}
-                      {a.detail&&<p className="text-xs leading-relaxed" style={{color:"#94a3b8"}}>{a.detail}</p>}
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-
-              <SectionCard title="Root Cause Analysis" icon="🧠">
-                <div className="space-y-3">
-                  {(r.root_causes||[]).map((rc,i)=>(
-                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(7,13,22,0.6)",border:"1px solid rgba(255,255,255,0.05)"}}>
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="text-xs font-bold" style={{color:SB}}>{rc.department}</span>
-                        <span style={{color:"#1e3a5f"}}>·</span>
-                        <span className="text-xs" style={{color:"#64748b"}}>{rc.month}</span>
-                        {rc.variance_dollar!==undefined&&<span className={`text-xs font-semibold ml-auto ${rc.variance_dollar<0?"text-red-400":"text-green-400"}`}>{rc.variance_dollar>=0?"+":"-"}${Math.abs(rc.variance_dollar||0).toLocaleString()}</span>}
-                        {rc.confidence&&<ConfidenceDot c={rc.confidence}/>}
-                      </div>
-                      <p className="text-xs leading-relaxed mb-2" style={{color:"#94a3b8"}}>{rc.hypothesis}</p>
-                      {(rc.contributing_factors||[]).length>0&&(
-                        <div className="flex flex-wrap gap-1.5">
-                          {rc.contributing_factors.map((f,j)=>(
-                            <span key={j} className="px-2 py-0.5 rounded-md text-xs" style={{background:"rgba(41,181,232,0.08)",color:"#64748b",border:"1px solid rgba(41,181,232,0.12)"}}>{f}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-            </div>
-
-            {/* Department Insights */}
-            {(r.department_insights||[]).length>0&&(
-              <SectionCard title="Department Insights" icon="📈">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {(r.department_insights||[]).map((d,i)=>(
-                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(7,13,22,0.6)",border:"1px solid rgba(255,255,255,0.05)"}}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-100">{d.department}</span>
-                        <TrendChip t={d.trend}/>
-                      </div>
-                      <p className="text-xs leading-relaxed mb-2.5" style={{color:"#64748b"}}>{d.insight}</p>
-                      {d.action&&<div className="text-xs rounded-lg px-2.5 py-1.5 font-medium" style={{background:"rgba(41,181,232,0.07)",color:SB,border:"1px solid rgba(41,181,232,0.12)"}}>→ {d.action}</div>}
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
+          ):(<>
+            {/* Consumption story */}
+            {result.consumption_story&&(
+              <div className="rounded-xl p-4" style={{background:"rgba(41,181,232,0.05)",border:"1px solid rgba(41,181,232,0.12)"}}>
+                <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{color:SB}}>Consumption Story</div>
+                <p className="text-sm leading-relaxed" style={{color:"#cbd5e1"}}>{result.consumption_story}</p>
+              </div>
             )}
 
-            {/* 2-col: Risk + Recommendations */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <SectionCard title="Risk Flags" icon="🚩" accent="rgba(239,68,68,0.15)">
+              {/* Workload insights */}
+              <SectionCard title="Workload Signals" icon="📡">
                 <div className="space-y-3">
-                  {(r.risk_flags||[]).map((rf,i)=>(
-                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(239,68,68,0.04)",border:"1px solid rgba(239,68,68,0.1)"}}>
-                      <div className="flex items-start gap-2 mb-1.5">
-                        <span className="text-red-400 shrink-0 mt-0.5 text-xs">▸</span>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="text-xs font-semibold text-slate-200">{rf.flag||rf}</span>
-                            {rf.urgency&&<UrgencyBadge u={rf.urgency}/>}
-                          </div>
-                          {rf.impact&&<p className="text-xs leading-relaxed" style={{color:"#64748b"}}>{rf.impact}</p>}
-                        </div>
+                  {(result.workload_insights||[]).map((wi,i)=>(
+                    <div key={i} className="rounded-xl p-3.5" style={{background:"rgba(5,10,20,0.6)",border:"1px solid rgba(255,255,255,0.04)"}}>
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{background:WORKLOAD_COLORS[wi.workload]||DEFAULT_COLOR}}></div>
+                        <span className="text-xs font-bold" style={{color:WORKLOAD_COLORS[wi.workload]||SB}}>{wi.workload}</span>
+                        <span className="text-xs" style={{color:"#475569"}}>· {wi.quarter}</span>
+                        <span className="ml-auto"><SignalChip s={wi.signal}/></span>
                       </div>
+                      <p className="text-xs leading-relaxed" style={{color:"#94a3b8"}}>{wi.insight}</p>
                     </div>
                   ))}
                 </div>
               </SectionCard>
 
-              <SectionCard title="Recommended Actions" icon="✅" accent="rgba(74,222,128,0.12)">
-                <div className="space-y-3">
-                  {(r.recommendations||[]).map((rec,i)=>(
-                    <div key={i} className="rounded-xl p-3.5 flex gap-3" style={{background:"rgba(74,222,128,0.04)",border:"1px solid rgba(74,222,128,0.08)"}}>
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{background:"rgba(74,222,128,0.12)",color:"#4ade80",border:"1px solid rgba(74,222,128,0.2)"}}>{rec.priority||i+1}</div>
-                      <div>
-                        <div className="text-xs font-semibold text-slate-100 mb-1">{rec.action}</div>
-                        <div className="flex flex-wrap gap-3 text-xs" style={{color:"#475569"}}>
-                          {rec.owner&&<span>👤 {rec.owner}</span>}
-                          {rec.expected_impact&&<span>🎯 {rec.expected_impact}</span>}
-                        </div>
-                      </div>
+              {/* Pricing signals */}
+              <SectionCard title="Pricing & PMF Signals" icon="💡">
+                <div className="space-y-2.5 mb-4">
+                  {(result.pricing_signals||[]).map((s,i)=>(
+                    <div key={i} className="flex gap-2 text-xs items-start rounded-xl p-3" style={{background:"rgba(5,10,20,0.6)",border:"1px solid rgba(255,255,255,0.04)"}}>
+                      <span style={{color:SB}} className="shrink-0 mt-0.5 font-bold">▸</span>
+                      <span style={{color:"#94a3b8"}}>{s}</span>
                     </div>
                   ))}
                 </div>
+                {(result.recommended_actions||[]).length>0&&<>
+                  <div className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{color:"#4ade80"}}>Finance Actions</div>
+                  <div className="space-y-2">
+                    {(result.recommended_actions||[]).map((a,i)=>(
+                      <div key={i} className="flex gap-2 text-xs items-start rounded-xl p-3" style={{background:"rgba(74,222,128,0.04)",border:"1px solid rgba(74,222,128,0.08)"}}>
+                        <span className="text-green-400 shrink-0 font-bold">→</span>
+                        <span style={{color:"#94a3b8"}}>{a}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>}
               </SectionCard>
             </div>
 
-            {/* CFO Narrative */}
-            <SectionCard title="CFO Narrative" icon="📋" accent="rgba(41,181,232,0.15)">
-              <div className="rounded-xl p-5 mb-3 text-sm leading-relaxed" style={{background:"rgba(7,13,22,0.7)",border:"1px solid rgba(41,181,232,0.1)",color:"#cbd5e1",lineHeight:1.8}}>{r.cfo_narrative}</div>
-              <button onClick={copyNarrative} className="w-full py-2 rounded-xl text-xs font-bold transition-all" style={{background:copied?"rgba(74,222,128,0.12)":"rgba(41,181,232,0.08)",color:copied?"#4ade80":SB,border:`1px solid ${copied?"rgba(74,222,128,0.25)":"rgba(41,181,232,0.2)"}`}}>
-                {copied?"✓ Copied to clipboard":"Copy to Clipboard"}
-              </button>
-            </SectionCard>
+            {/* Board narrative */}
+            <div className="glass rounded-2xl p-5" style={{border:"1px solid rgba(41,181,232,0.18)"}}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-bold uppercase tracking-widest" style={{color:SB}}>📋 Board Narrative</div>
+                <button onClick={copyNarr} className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all" style={{background:copied?"rgba(74,222,128,0.1)":"rgba(41,181,232,0.08)",color:copied?"#4ade80":SB,border:`1px solid ${copied?"rgba(74,222,128,0.2)":"rgba(41,181,232,0.18)"}`}}>
+                  {copied?"✓ Copied":"Copy"}
+                </button>
+              </div>
+              <div className="rounded-xl p-4 text-sm leading-relaxed" style={{background:"rgba(5,10,20,0.7)",border:"1px solid rgba(41,181,232,0.08)",color:"#cbd5e1",lineHeight:1.85,fontStyle:"italic"}}>
+                "{result.board_narrative}"
+              </div>
+            </div>
           </>)}
         </div>
       )}
@@ -593,59 +562,65 @@ function AnalysisPanel({data, onAnalysisDone, analysisResult, setAnalysisResult}
   );
 }
 
-function StickyBar({enrichedData, cfoNarrative}) {
+function StickyBar({data,boardNarrative}){
   const [c1,setC1]=React.useState(false);
   const [c2,setC2]=React.useState(false);
 
-  function copyNarr(){if(!cfoNarrative)return;navigator.clipboard.writeText(cfoNarrative).then(()=>{setC1(true);setTimeout(()=>setC1(false),2000);});}
+  function copyNarr(){if(!boardNarrative)return;navigator.clipboard.writeText(boardNarrative).then(()=>{setC1(true);setTimeout(()=>setC1(false),2000);});}
   function dlCSV(){
-    const h="Department,Month,Budget,Actual,$ Variance,% Variance\n";
-    const rows=enrichedData.map(r=>`${r.department},${r.month},${r.budget},${r.actual},${r.dollar},${r.pct.toFixed(2)}%`).join("\n");
-    const a=Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([h+rows],{type:"text/csv"})),download:`fpa_variance_${new Date().toISOString().slice(0,10)}.csv`});
-    a.click();setC2(true);setTimeout(()=>setC2(false),2000);
+    const h="Workload,Quarter,Committed,Consumed,Gap,Rate\n";
+    const rows=data.map(r=>{const rate=consumptionRate(r);const gap=r.consumed-r.committed;return`${r.workload},${r.quarter},${r.committed},${r.consumed},${gap},${rate.toFixed(2)}%`;}).join("\n");
+    const a=Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([h+rows],{type:"text/csv"})),download:`cortex_fpa_${new Date().toISOString().slice(0,10)}.csv`});a.click();
+    setC2(true);setTimeout(()=>setC2(false),2000);
   }
-  function exportHTML(){
+  function exportSummary(){
     const date=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
-    const trs=enrichedData.map(r=>`<tr><td>${r.department}</td><td>${r.month}</td><td>$${r.budget.toLocaleString()}</td><td>$${r.actual.toLocaleString()}</td><td style="color:${r.dollar<0?"#dc2626":"#16a34a"}">${fmt$(r.dollar)}</td><td>${fmtPct(r.pct)}</td></tr>`).join("");
-    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>FP&A Executive Summary</title><style>body{font-family:Arial,sans-serif;max-width:960px;margin:48px auto;color:#1e293b;padding:0 24px}h1{font-size:24px;font-weight:800;color:#0f172a}p.sub{font-size:13px;color:#64748b;margin:4px 0 36px}table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:36px}th{background:#0d1520;color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.07em;text-transform:uppercase}td{padding:9px 14px;border-bottom:1px solid #e2e8f0}tr:nth-child(even) td{background:#f8fafc}.narr{background:#f0fdf4;border-left:4px solid #16a34a;padding:18px 22px;border-radius:6px;font-size:14px;line-height:1.75;color:#1e293b}.footer{margin-top:56px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:16px}</style></head><body><h1>❄️ Cortex FP&A — Variance Executive Summary</h1><p class="sub">Generated ${date} · Powered by Snowflake Cortex · Built by ${AUTHOR_NAME}</p><table><thead><tr><th>Department</th><th>Month</th><th>Budget</th><th>Actual</th><th>$ Variance</th><th>% Variance</th></tr></thead><tbody>${trs}</tbody></table>${cfoNarrative?`<div class="narr"><strong>CFO Narrative</strong><br/><br/>${cfoNarrative}</div>`:""}<div class="footer">Built with Snowflake Cortex ❄️ and Claude AI · <a href="${AUTHOR_LINKEDIN}">${AUTHOR_NAME}</a></div></body></html>`;
-    const a=Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([html],{type:"text/html"})),download:`fpa_executive_summary_${new Date().toISOString().slice(0,10)}.html`});
-    a.click();
+    const totalC=data.reduce((s,r)=>s+r.committed,0),totalCons=data.reduce((s,r)=>s+r.consumed,0);
+    const overallRate=((totalCons/totalC)*100).toFixed(1);
+    const trs=data.map(r=>{const rate=consumptionRate(r);const gap=r.consumed-r.committed;return`<tr><td>${r.workload}</td><td>${r.quarter}</td><td>${fmtM(r.committed)}</td><td>${fmtM(r.consumed)}</td><td style="color:${gap>=0?"#16a34a":"#dc2626"}">${fmtMsigned(gap)}</td><td>${rate.toFixed(1)}%</td></tr>`;}).join("");
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Cortex FP&A — Executive Summary</title><style>body{font-family:Arial,sans-serif;max-width:960px;margin:48px auto;color:#1e293b;padding:0 24px}h1{font-size:22px;font-weight:800;color:#0f172a}.sub{font-size:13px;color:#64748b;margin:4px 0 8px}.kpi{display:flex;gap:24px;margin:24px 0;flex-wrap:wrap}.kpi-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;min-width:160px}.kpi-label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}.kpi-val{font-size:22px;font-weight:800;color:#0f172a}table{width:100%;border-collapse:collapse;font-size:13px;margin:24px 0}th{background:#0d1520;color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}tr:nth-child(even) td{background:#f8fafc}.narr{background:#eff6ff;border-left:4px solid #29B5E8;padding:18px 22px;border-radius:6px;font-size:14px;line-height:1.75;color:#1e293b;font-style:italic;margin-top:24px}.footer{margin-top:48px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:16px}</style></head>
+<body><h1>❄️ Cortex FP&A — Consumption Revenue Summary</h1><p class="sub">Generated ${date} · Powered by Snowflake Cortex · Built by <a href="${AUTHOR_LINKEDIN}">Nithya Kuppa</a></p>
+<div class="kpi"><div class="kpi-card"><div class="kpi-label">Total Committed</div><div class="kpi-val">${fmtM(totalC)}</div></div><div class="kpi-card"><div class="kpi-label">Total Consumed</div><div class="kpi-val">${fmtM(totalCons)}</div></div><div class="kpi-card"><div class="kpi-label">Overall Rate</div><div class="kpi-val">${overallRate}%</div></div></div>
+<table><thead><tr><th>Workload</th><th>Quarter</th><th>Committed</th><th>Consumed</th><th>Gap</th><th>Rate</th></tr></thead><tbody>${trs}</tbody></table>
+${boardNarrative?`<div class="narr">${boardNarrative}</div>`:""}
+<div class="footer">Built with Snowflake Cortex ❄️ and Claude AI · <a href="${AUTHOR_LINKEDIN}">Nithya Kuppa</a></div></body></html>`;
+    const a=Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([html],{type:"text/html"})),download:`cortex_fpa_summary_${new Date().toISOString().slice(0,10)}.html`});a.click();
   }
 
-  const btn="px-4 py-2 rounded-lg text-xs font-bold transition-all hover:opacity-90 active:scale-95 glass glass-hover";
+  const btn="px-4 py-2 rounded-lg text-xs font-bold transition-all btn-ghost";
   return(
-    <div className="sticky-bar px-6 py-3 flex items-center gap-3" style={{background:"rgba(7,13,22,0.9)",borderTop:"1px solid rgba(41,181,232,0.1)"}}>
-      <span className="text-xs mr-1 hidden sm:block" style={{color:"#334155"}}>Export</span>
-      <button onClick={copyNarr} disabled={!cfoNarrative} className={btn} style={{color:c1?"#4ade80":"#64748b",opacity:cfoNarrative?1:0.35}}>{c1?"✓ Copied":"📋 CFO Narrative"}</button>
-      <button onClick={dlCSV} className={btn} style={{color:c2?"#4ade80":"#64748b"}}>{c2?"✓ Downloaded":"⬇ Download CSV"}</button>
-      <button onClick={exportHTML} className={btn} style={{color:"#64748b"}}>📄 Export Summary</button>
-      <div className="ml-auto text-xs hidden md:block" style={{color:"#1e3a5f"}}>❄️ Snowflake Cortex FP&amp;A</div>
+    <div className="sticky-bar px-6 py-3 flex items-center gap-3" style={{background:"rgba(5,10,20,0.92)",borderTop:"1px solid rgba(41,181,232,0.08)"}}>
+      <span className="text-xs mr-1 hidden sm:block" style={{color:"#1e3a5f"}}>Export</span>
+      <button onClick={copyNarr} disabled={!boardNarrative} className={btn} style={{opacity:boardNarrative?1:0.35,color:c1?"#4ade80":undefined}}>{c1?"✓ Copied":"📋 Board Narrative"}</button>
+      <button onClick={dlCSV} className={btn} style={{color:c2?"#4ade80":undefined}}>{c2?"✓ Downloaded":"⬇ Download CSV"}</button>
+      <button onClick={exportSummary} className={btn}>📄 Export Summary</button>
+      <div className="ml-auto text-xs hidden md:block" style={{color:"#1a2e40"}}>❄️ Snowflake Cortex FP&amp;A</div>
     </div>
   );
 }
 
 // ── App ───────────────────────────────────────────────────────
-function App() {
+function App(){
   const [data,setData]=React.useState(DEMO_DATA);
   const [usingDemo,setUsingDemo]=React.useState(true);
-  const [analysisResult,setAnalysisResult]=React.useState(null);
-  const [analysisRows,setAnalysisRows]=React.useState(new Set());
+  const [result,setResult]=React.useState(null);
+  const [signalRows,setSignalRows]=React.useState({});
 
-  function useDemo(){setData(DEMO_DATA);setUsingDemo(true);setAnalysisResult(null);setAnalysisRows(new Set());}
-  function uploadCSV(rows){setData(rows);setUsingDemo(false);setAnalysisResult(null);setAnalysisRows(new Set());}
-  function onAnalysisDone(result){
-    const rows=new Set();
-    (result.anomalies||[]).forEach(a=>{data.forEach(r=>{if(String(a.title||a).toLowerCase().includes(r.department.toLowerCase())&&String(a.title||a).toLowerCase().includes(r.month.toLowerCase()))rows.add(`${r.department}|${r.month}`);});});
-    (result.root_causes||[]).forEach(rc=>rows.add(`${rc.department}|${rc.month}`));
-    setAnalysisRows(rows);
+  function useDemo(){setData(DEMO_DATA);setUsingDemo(true);setResult(null);setSignalRows({});}
+  function uploadCSV(rows){setData(rows);setUsingDemo(false);setResult(null);setSignalRows({});}
+  function onDone(r){
+    const sr={};
+    (r.workload_insights||[]).forEach(wi=>{sr[`${wi.workload}|${wi.quarter}`]=wi.signal;});
+    setSignalRows(sr);
   }
 
-  const enriched=React.useMemo(()=>enrichData(data),[data]);
-  const totalBudget=enriched.reduce((s,r)=>s+r.budget,0);
-  const totalActual=enriched.reduce((s,r)=>s+r.actual,0);
-  const totalDelta=totalActual-totalBudget;
-  const redCount=enriched.filter(r=>r.badness>5).length;
-  const cfoNarrative=analysisResult?.cfo_narrative||"";
+  const totalCommitted=data.reduce((s,r)=>s+r.committed,0);
+  const totalConsumed=data.reduce((s,r)=>s+r.consumed,0);
+  const overallRate=(totalConsumed/totalCommitted)*100;
+  const gap=totalConsumed-totalCommitted;
+  const fastest=React.useMemo(()=>getFastestGrowing(data),[data]);
+  const atRisk=React.useMemo(()=>getAtRisk(data),[data]);
+  const boardNarrative=result?.board_narrative||"";
 
   return(
     <div className="min-h-screen pb-20">
@@ -655,44 +630,52 @@ function App() {
         {/* Top bar */}
         <div className="glass rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 fade-up">
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest mb-1" style={{color:SB}}>Data Source</div>
-            <div className="text-xs" style={{color:"#475569"}}>Upload any CSV — column order and formatting don't matter</div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{color:SB}}>Data Source</div>
+            <div className="text-xs" style={{color:"#334155"}}>Upload any CSV — Workload, Quarter, Committed, Consumed</div>
           </div>
           <DataInput usingDemo={usingDemo} onUseDemo={useDemo} onCSVUpload={uploadCSV}/>
         </div>
 
-        {/* Stats */}
+        {/* KPI bar */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 fade-up-2">
-          <StatCard label="Total Budget" value={"$"+(totalBudget/1e6).toFixed(2)+"M"} color="#94a3b8"/>
-          <StatCard label="Total Actual" value={"$"+(totalActual/1e6).toFixed(2)+"M"} color={SB}/>
-          <StatCard label="Net Variance" value={fmt$(totalDelta)} color={totalDelta>=0?"#4ade80":"#f87171"} sub={fmtPct(totalDelta/totalBudget*100)}/>
-          <StatCard label="Red Variances" value={`${redCount} rows`} color={redCount>3?"#f87171":"#facc15"} sub="worse than −5%"/>
+          <KPICard label="Total Committed" value={fmtM(totalCommitted)} sub={`Consumed: ${fmtM(totalConsumed)}`} color="#94a3b8" icon="📋"/>
+          <KPICard label="Overall Consumption Rate" value={fmtRate(overallRate)} sub={`Gap: ${fmtMsigned(gap)}`} color={overallRate>=95?"#4ade80":overallRate>=80?"#facc15":"#f87171"} icon="📊"/>
+          <KPICard label="Fastest Growing" value={fastest.workload?.split(" ")[0]||"—"} sub={`+${fastest.delta?.toFixed(1)}pp consumption rate`} color="#4ade80" icon="🚀"/>
+          <KPICard label="At-Risk Workload" value={atRisk.workload?.split(" ")[0]||"—"} sub={`${fmtRate(atRisk.rate||0)} consumption rate`} color="#f87171" icon="⚠️"/>
         </div>
+
+        {/* Trajectory chart */}
+        <div className="fade-up-3"><TrajectoryChart data={data}/></div>
 
         {/* Table */}
-        <div className="fade-up-3">
+        <div>
           <div className="flex items-center justify-between mb-3">
-            <div className="section-label">Budget vs. Actual</div>
+            <div className="section-label">Variance Detail</div>
             <div className="flex gap-3 text-xs" style={{color:"#334155"}}>
-              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(239,68,68,0.12)",color:"#f87171",border:"1px solid rgba(239,68,68,0.2)",fontSize:10}}>&gt;−5%</span> bad</span>
-              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(234,179,8,0.1)",color:"#facc15",border:"1px solid rgba(234,179,8,0.2)",fontSize:10}}>−2–5%</span> watch</span>
-              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(74,222,128,0.1)",color:"#4ade80",border:"1px solid rgba(74,222,128,0.2)",fontSize:10}}>&lt;2%</span> ok</span>
+              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(74,222,128,0.1)",color:"#4ade80",border:"1px solid rgba(74,222,128,0.2)",fontSize:10}}>&gt;95%</span>healthy</span>
+              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(234,179,8,0.08)",color:"#facc15",border:"1px solid rgba(234,179,8,0.2)",fontSize:10}}>80–95%</span>watch</span>
+              <span className="flex items-center gap-1"><span className="pill" style={{background:"rgba(239,68,68,0.1)",color:"#f87171",border:"1px solid rgba(239,68,68,0.2)",fontSize:10}}>&lt;80%</span>risk</span>
             </div>
           </div>
-          <VarianceTable data={data} analysisRows={analysisRows}/>
+          <VarianceTable data={data} signalRows={signalRows}/>
         </div>
 
+        {/* Waterfall */}
+        <WaterfallChart data={data}/>
+
         {/* Analysis */}
-        <div><div className="section-label">AI Analysis</div><AnalysisPanel data={data} onAnalysisDone={onAnalysisDone} analysisResult={analysisResult} setAnalysisResult={setAnalysisResult}/></div>
+        <div>
+          <div className="section-label">AI Analysis</div>
+          <AnalysisPanel data={data} onDone={onDone} result={result} setResult={setResult}/>
+        </div>
       </main>
 
-      {/* Footer */}
       <footer className="text-center py-5 pb-20 space-y-1">
-        <div className="text-xs" style={{color:"#1e3a5f"}}>Built with Snowflake Cortex ❄️ and Claude AI</div>
-        <div className="text-xs"><a href={AUTHOR_LINKEDIN} target="_blank" rel="noreferrer" className="font-semibold hover:opacity-80 transition-opacity" style={{color:"#29B5E8"}}>{AUTHOR_NAME}</a></div>
+        <div className="text-xs" style={{color:"#1a2e40"}}>Built with Snowflake Cortex ❄️ and Claude AI</div>
+        <div className="text-xs"><a href={AUTHOR_LINKEDIN} target="_blank" rel="noreferrer" className="font-semibold hover:opacity-80 transition-opacity" style={{color:SB}}>Nithya Kuppa</a></div>
       </footer>
 
-      <StickyBar enrichedData={enriched} cfoNarrative={cfoNarrative}/>
+      <StickyBar data={data} boardNarrative={boardNarrative}/>
     </div>
   );
 }
