@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;font-family:'Inter',sans-serif;}
@@ -210,12 +210,7 @@ const SYSTEM_PROMPT=`You are a Senior Director of Product Finance at a consumpti
 }
 Return only valid JSON. No markdown, no preamble.`;
 
-// ── Recharts destructure (defensive — won't crash if CDN is slow) ────────────
-const _RC = window.Recharts || {};
-const LineChart=_RC.LineChart,Line=_RC.Line,BarChart=_RC.BarChart,Bar=_RC.Bar,
-  XAxis=_RC.XAxis,YAxis=_RC.YAxis,CartesianGrid=_RC.CartesianGrid,
-  Tooltip=_RC.Tooltip,Legend=_RC.Legend,ResponsiveContainer=_RC.ResponsiveContainer,
-  ReferenceLine=_RC.ReferenceLine,Cell=_RC.Cell;
+// Chart.js is loaded as window.Chart via CDN
 
 // ── Components ────────────────────────────────────────────────
 
@@ -346,87 +341,109 @@ function VarianceTable({data,signalRows}){
 }
 
 function TrajectoryChart({data}){
+  const canvasRef=React.useRef();
+  const chartRef=React.useRef();
   const workloads=React.useMemo(()=>[...new Set(data.map(r=>r.workload))],[data]);
   const [visible,setVisible]=React.useState(()=>{const s={};workloads.forEach(w=>s[w]=true);return s;});
   const quarters=["Q1","Q2","Q3","Q4"];
 
-  const chartData=React.useMemo(()=>quarters.map(q=>{
-    const pt={quarter:q};
-    workloads.forEach(w=>{
-      const row=data.find(r=>r.workload===w&&r.quarter===q);
-      if(row){pt[`${w}_committed`]=row.committed;pt[`${w}_consumed`]=row.consumed;}
-    });
-    return pt;
-  }),[data]);
-
   function toggle(w){setVisible(v=>({...v,[w]:!v[w]}));}
 
-  const fmtAxis=(v)=>{if(v>=1e6)return"$"+(v/1e6).toFixed(1)+"M";if(v>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v;};
+  React.useEffect(()=>{
+    if(!canvasRef.current||!window.Chart)return;
+    if(chartRef.current)chartRef.current.destroy();
+    const datasets=[];
+    workloads.forEach(w=>{
+      if(!visible[w])return;
+      const color=WORKLOAD_COLORS[w]||DEFAULT_COLOR;
+      datasets.push({label:`${w} (committed)`,data:quarters.map(q=>{const r=data.find(d=>d.workload===w&&d.quarter===q);return r?r.committed:null;}),borderColor:color,backgroundColor:"transparent",borderDash:[6,4],borderWidth:1.5,pointRadius:0,tension:.4});
+      datasets.push({label:`${w} (consumed)`,data:quarters.map(q=>{const r=data.find(d=>d.workload===w&&d.quarter===q);return r?r.consumed:null;}),borderColor:color,backgroundColor:color+"18",borderWidth:2.5,pointRadius:3,pointBackgroundColor:color,tension:.4,fill:false});
+    });
+    chartRef.current=new window.Chart(canvasRef.current,{
+      type:"line",
+      data:{labels:quarters,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:"index",intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{backgroundColor:"#0d1a2e",borderColor:"rgba(41,181,232,0.2)",borderWidth:1,titleColor:"#64748b",bodyColor:"#e2e8f0",padding:10,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtM(ctx.parsed.y)}`}},
+        },
+        scales:{
+          x:{grid:{color:"rgba(255,255,255,0.03)"},ticks:{color:"#475569",font:{size:11}}},
+          y:{grid:{color:"rgba(255,255,255,0.03)"},ticks:{color:"#475569",font:{size:11},callback:v=>{if(v>=1e6)return"$"+(v/1e6).toFixed(1)+"M";if(v>=1e3)return"$"+(v/1e3).toFixed(0)+"K";return"$"+v;}},border:{display:false}},
+        },
+      }
+    });
+    return()=>{if(chartRef.current)chartRef.current.destroy();};
+  },[data,visible]);
 
   return(
     <div className="glass glass-hover rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="section-label mb-0">Workload Trajectory — Committed vs Consumed</div>
-      </div>
+      <div className="section-label mb-4">Workload Trajectory — Committed vs Consumed</div>
       <div className="flex flex-wrap gap-2 mb-5">
         {workloads.map(w=>(
-          <button key={w} onClick={()=>toggle(w)} className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${visible[w]?"":"opacity-35"}`}
-            style={{background:visible[w]?`${WORKLOAD_COLORS[w]||DEFAULT_COLOR}18`:"rgba(255,255,255,0.04)",color:visible[w]?WORKLOAD_COLORS[w]||DEFAULT_COLOR:"#475569",border:`1px solid ${visible[w]?`${WORKLOAD_COLORS[w]||DEFAULT_COLOR}40`:"rgba(255,255,255,0.06)"}`,transition:"all .2s"}}>
+          <button key={w} onClick={()=>toggle(w)} className="px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+            style={{background:visible[w]?`${WORKLOAD_COLORS[w]||DEFAULT_COLOR}18`:"rgba(255,255,255,0.03)",color:visible[w]?WORKLOAD_COLORS[w]||DEFAULT_COLOR:"#475569",border:`1px solid ${visible[w]?(WORKLOAD_COLORS[w]||DEFAULT_COLOR)+"40":"rgba(255,255,255,0.05)"}`,opacity:visible[w]?1:0.45}}>
             <span className="w-2 h-2 rounded-full" style={{background:WORKLOAD_COLORS[w]||DEFAULT_COLOR}}></span>{w}
           </button>
         ))}
       </div>
-      <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={chartData} margin={{top:4,right:16,left:8,bottom:4}}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)"/>
-          <XAxis dataKey="quarter" tick={{fill:"#475569",fontSize:11}} axisLine={{stroke:"rgba(255,255,255,0.06)"}} tickLine={false}/>
-          <YAxis tickFormatter={fmtAxis} tick={{fill:"#475569",fontSize:11}} axisLine={false} tickLine={false} width={72}/>
-          <Tooltip contentStyle={{background:"#0d1a2e",border:"1px solid rgba(41,181,232,0.2)",borderRadius:10,fontSize:12,color:"#e2e8f0"}} formatter={(v,n)=>[fmtM(v),n.replace(/_committed|_consumed/,"")]} labelStyle={{color:"#64748b",marginBottom:4}}/>
-          {workloads.map(w=>visible[w]&&[
-            <Line key={`${w}_committed`} type="monotone" dataKey={`${w}_committed`} stroke={WORKLOAD_COLORS[w]||DEFAULT_COLOR} strokeWidth={1.5} strokeDasharray="5 4" dot={false} name={`${w} (committed)`}/>,
-            <Line key={`${w}_consumed`}  type="monotone" dataKey={`${w}_consumed`}  stroke={WORKLOAD_COLORS[w]||DEFAULT_COLOR} strokeWidth={2.5} dot={{r:3,fill:WORKLOAD_COLORS[w]||DEFAULT_COLOR,strokeWidth:0}} activeDot={{r:5}} name={`${w} (consumed)`}/>,
-          ])}
-        </LineChart>
-      </ResponsiveContainer>
+      <div style={{height:280,position:"relative"}}><canvas ref={canvasRef}></canvas></div>
       <div className="flex items-center gap-4 mt-3 text-xs" style={{color:"#334155"}}>
-        <span className="flex items-center gap-1.5"><span style={{display:"inline-block",width:20,height:2,borderTop:"2px dashed #64748b"}}></span>Committed</span>
-        <span className="flex items-center gap-1.5"><span style={{display:"inline-block",width:20,height:2,background:"#64748b",borderRadius:2}}></span>Consumed</span>
+        <span className="flex items-center gap-1.5"><span style={{display:"inline-block",width:22,height:0,borderTop:"2px dashed #64748b"}}></span>Committed</span>
+        <span className="flex items-center gap-1.5"><span style={{display:"inline-block",width:22,height:2,background:"#64748b",borderRadius:2}}></span>Consumed</span>
       </div>
     </div>
   );
 }
 
 function WaterfallChart({data}){
+  const canvasRef=React.useRef();
+  const chartRef=React.useRef();
   const workloads=[...new Set(data.map(r=>r.workload))];
   const chartData=workloads.map(w=>{
     const rows=data.filter(r=>r.workload===w);
     const gap=rows.reduce((s,r)=>s+(r.consumed-r.committed),0);
-    return{workload:w,gap,shortName:w.replace("Compute (Warehouses)","Compute").replace("Marketplace / Apps","Marketplace").replace("AI / ML Workloads","AI/ML")};
+    return{label:w.replace("Compute (Warehouses)","Compute").replace("Marketplace / Apps","Marketplace").replace("AI / ML Workloads","AI/ML"),gap};
   }).sort((a,b)=>a.gap-b.gap);
 
-  const fmt=(v)=>{if(Math.abs(v)>=1e6)return(v>=0?"+":"-")+"$"+(Math.abs(v)/1e6).toFixed(1)+"M";return(v>=0?"+":"-")+"$"+(Math.abs(v)/1e3).toFixed(0)+"K";};
+  const fmtGap=(v)=>{if(Math.abs(v)>=1e6)return(v>=0?"+":"-")+"$"+(Math.abs(v)/1e6).toFixed(1)+"M";return(v>=0?"+":"-")+"$"+(Math.abs(v)/1e3).toFixed(0)+"K";};
 
-  const CustomLabel=({x,y,width,value})=>{
-    const isPos=value>=0;
-    return<text x={x+width/2} y={isPos?y-6:y+Math.abs(width)+14} textAnchor="middle" fill={isPos?"#4ade80":"#f87171"} fontSize={11} fontWeight={600}>{fmt(value)}</text>;
-  };
+  React.useEffect(()=>{
+    if(!canvasRef.current||!window.Chart)return;
+    if(chartRef.current)chartRef.current.destroy();
+    chartRef.current=new window.Chart(canvasRef.current,{
+      type:"bar",
+      data:{
+        labels:chartData.map(d=>d.label),
+        datasets:[{
+          data:chartData.map(d=>d.gap),
+          backgroundColor:chartData.map(d=>d.gap>=0?"rgba(41,181,232,0.65)":"rgba(239,68,68,0.55)"),
+          borderColor:chartData.map(d=>d.gap>=0?"rgba(41,181,232,0.9)":"rgba(239,68,68,0.8)"),
+          borderWidth:1,borderRadius:4,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{backgroundColor:"#0d1a2e",borderColor:"rgba(41,181,232,0.2)",borderWidth:1,titleColor:"#64748b",bodyColor:"#e2e8f0",padding:10,callbacks:{label:ctx=>`Gap: ${fmtGap(ctx.parsed.y)}`}},
+        },
+        scales:{
+          x:{grid:{display:false},ticks:{color:"#475569",font:{size:11}}},
+          y:{grid:{color:"rgba(255,255,255,0.03)"},ticks:{color:"#475569",font:{size:11},callback:fmtGap},border:{display:false}},
+        },
+      }
+    });
+    return()=>{if(chartRef.current)chartRef.current.destroy();};
+  },[data]);
 
   return(
     <div className="glass glass-hover rounded-2xl p-5">
       <div className="section-label">Consumption Gap by Workload — Total Across All Quarters</div>
-      <div className="text-xs mb-5" style={{color:"#334155"}}>Blue = over-consumption (revenue upside) · Red = under-consumption (revenue risk)</div>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={chartData} margin={{top:24,right:16,left:8,bottom:4}}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false}/>
-          <XAxis dataKey="shortName" tick={{fill:"#475569",fontSize:11}} axisLine={false} tickLine={false}/>
-          <YAxis tickFormatter={fmt} tick={{fill:"#475569",fontSize:11}} axisLine={false} tickLine={false} width={72}/>
-          <Tooltip contentStyle={{background:"#0d1a2e",border:"1px solid rgba(41,181,232,0.2)",borderRadius:10,fontSize:12,color:"#e2e8f0"}} formatter={(v)=>[fmt(v),"Consumption Gap"]} labelStyle={{color:"#64748b"}}/>
-          <ReferenceLine y={0} stroke="rgba(255,255,255,0.08)" strokeWidth={1.5}/>
-          <Bar dataKey="gap" radius={[4,4,0,0]} label={<CustomLabel/>}>
-            {chartData.map((entry,i)=><Cell key={i} fill={entry.gap>=0?"rgba(41,181,232,0.7)":"rgba(239,68,68,0.6)"} stroke={entry.gap>=0?"rgba(41,181,232,0.4)":"rgba(239,68,68,0.3)"} strokeWidth={1}/>)}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="text-xs mb-5" style={{color:"#334155"}}>Blue = over-consumption (revenue upside) · Red = under-consumption (revenue at risk)</div>
+      <div style={{height:220,position:"relative"}}><canvas ref={canvasRef}></canvas></div>
     </div>
   );
 }
