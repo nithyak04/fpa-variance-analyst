@@ -8,7 +8,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;font-family:'Inter',sans-serif;}
@@ -52,6 +52,14 @@
 </head>
 <body>
 <div id="root"></div>
+<div id="fatal-error" style="display:none;position:fixed;inset:0;background:#0a0f1a;color:#f87171;font-family:monospace;font-size:13px;padding:40px;z-index:9999;white-space:pre-wrap;overflow:auto;"></div>
+<script>
+  window.onerror=function(msg,src,line,col,err){
+    var el=document.getElementById('fatal-error');
+    if(el){el.style.display='block';el.textContent='❄️ Cortex FP&A — JS Error\n\n'+msg+'\n\nLine '+line+'\n'+(err&&err.stack?err.stack:'');}
+    return false;
+  };
+</script>
 <script type="text/babel">
 // ── Config ────────────────────────────────────────────────────
 const ANTHROPIC_API_KEY = ""; // Replace with your key — calls go through /api/analyze
@@ -202,8 +210,12 @@ const SYSTEM_PROMPT=`You are a Senior Director of Product Finance at a consumpti
 }
 Return only valid JSON. No markdown, no preamble.`;
 
-// ── Recharts destructure ─────────────────────────────────────
-const {LineChart,Line,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,ReferenceLine,Cell}=Recharts;
+// ── Recharts destructure (defensive — won't crash if CDN is slow) ────────────
+const _RC = window.Recharts || {};
+const LineChart=_RC.LineChart,Line=_RC.Line,BarChart=_RC.BarChart,Bar=_RC.Bar,
+  XAxis=_RC.XAxis,YAxis=_RC.YAxis,CartesianGrid=_RC.CartesianGrid,
+  Tooltip=_RC.Tooltip,Legend=_RC.Legend,ResponsiveContainer=_RC.ResponsiveContainer,
+  ReferenceLine=_RC.ReferenceLine,Cell=_RC.Cell;
 
 // ── Components ────────────────────────────────────────────────
 
